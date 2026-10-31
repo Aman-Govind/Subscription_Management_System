@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brightloop — Subscription Management System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              500: '#6366f1',
+              600: '#4f46e5',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+    }
+  </style>
+</head>
+
+<body class="h-full bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
+  <div id="app" class="h-full"></div>
+
+  <script>
+    const PRESET_USERS = {
+      admin: {
+        name: 'Sarah Connor',
+        email: 'admin@brightloop.io',
+        role: 'admin',
+        company: 'Brightloop Core Systems',
+        department: 'Platform Engineering',
+        allowedRoutes: ['dashboard', 'products', 'subscriptions', 'invoices', 'payments']
+      },
+      staff: {
+        name: 'Alex Rivera',
+        email: 'staff@brightloop.io',
+        role: 'staff',
+        company: 'Brightloop Operations',
+        department: 'Billing Operations',
+        allowedRoutes: ['dashboard', 'products', 'subscriptions', 'invoices', 'payments']
+      },
+      customer: {
+        name: 'Elena Rostova',
+        email: 'customer@acme.corp',
+        role: 'customer',
+        company: 'Acme Global Logistics',
+        department: 'Subscriber Portal',
+        allowedRoutes: ['dashboard', 'subscriptions', 'invoices']
+      }
+    };
+
+    // Load persisted state from localStorage to maintain strict immutability across reloads
+    let state = {
+      token: localStorage.getItem('token') || null,
+      role: localStorage.getItem('user_role') || null,
+      user: (() => {
+        try { return JSON.parse(localStorage.getItem('user_profile')) || null; } catch { return null; }
+      })(),
+      activeTab: 'dashboard',
+      selectedLoginRole: 'admin',
+      loginEmail: 'admin@brightloop.io',
+      loginPassword: 'password123',
+      showPassword: false,
+      isSubmitting: false,
+      loginError: '',
+      isRegisterMode: false,
+      regName: '',
+      regEmail: '',
+      regCompany: '',
+      regRole: 'customer',
+      regPassword: '',
+      regConfirm: ''
+    };
+
+    function setLoginRole(roleKey) {
+      const p = PRESET_USERS[roleKey];
+      if (p) {
+        state.selectedLoginRole = roleKey;
+        state.loginEmail = p.email;
+        state.loginPassword = 'password123';
+        state.loginError = '';
+        render();
+      }
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      state.isSubmitting = true;
+      state.loginError = '';
+      render();
+
+      setTimeout(() => {
+        const preset = PRESET_USERS[state.selectedLoginRole];
+        const assignedRole = state.selectedLoginRole;
+        const profile = {
+          name: state.loginEmail.split('@')[0].replace('.', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          email: state.loginEmail,
+          role: assignedRole,
+          company: preset ? preset.company : 'Brightloop Software',
+          department: preset ? preset.department : 'General Access',
+          allowedRoutes: assignedRole === 'customer'
+            ? ['dashboard', 'subscriptions', 'invoices']
+            : ['dashboard', 'products', 'subscriptions', 'invoices', 'payments']
+        };
+        const token = 'jwt_token_' + assignedRole + '_' + Date.now();
+
+        // Enforce strict persistence
+        localStorage.setItem('token', token);
+        localStorage.setItem('user_role', assignedRole);
+        localStorage.setItem('user_profile', JSON.stringify(profile));
+
+        state.token = token;
+        state.role = assignedRole;
+        state.user = profile;
+        state.isSubmitting = false;
+        state.activeTab = 'dashboard';
+        render();
+      }, 250);
+    }
+
+    function handleRegisterSubmit(e) {
+      e.preventDefault();
+      if (state.regPassword !== state.regConfirm) {
+        state.loginError = 'Passwords do not match.';
+        render();
+        return;
+      }
+      state.isSubmitting = true;
+      render();
+
+      setTimeout(() => {
+        const role = state.regRole;
+        const profile = {
+          name: state.regName.trim(),
+          email: state.regEmail.trim(),
+          company: state.regCompany.trim() || 'Enterprise Org',
+          role: role,
+          department: role === 'customer' ? 'Subscriber Account' : 'Internal Staff',
+          allowedRoutes: role === 'customer'
+            ? ['dashboard', 'subscriptions', 'invoices']
+            : ['dashboard', 'products', 'subscriptions', 'invoices', 'payments']
+        };
+        const token = 'jwt_token_reg_' + Date.now();
+
+        localStorage.setItem('token', token);
+        localStorage.setItem('user_role', role);
+        localStorage.setItem('user_profile', JSON.stringify(profile));
+
+        state.token = token;
+        state.role = role;
+        state.user = profile;
+        state.isRegisterMode = false;
+        state.isSubmitting = false;
+        state.activeTab = 'dashboard';
+        render();
+      }, 300);
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('user_profile');
+
+      state.token = null;
+      state.role = null;
+      state.user = null;
+      state.activeTab = 'dashboard';
+      render();
+    }
+
+    function setActiveTab(tab) {
+      if (state.user && !state.user.allowedRoutes.includes(tab)) {
+        alert('Access Restricted: Your assigned role (' + state.role + ') does not have access to this module.');
+        return;
+      }
+      state.activeTab = tab;
+      render();
+    }
+
+    function render() {
+      const app = document.getElementById('app');
+      const isAuthenticated = !!state.token && !!state.user && !!state.role;
+
+      if (!isAuthenticated) {
+        app.innerHTML = state.isRegisterMode ? renderRegisterScreen() : renderLoginScreen();
+      } else {
+        app.innerHTML = renderAppShell();
+      }
+    }
+
+    function renderLoginScreen() {
+      return `
+        <div class="min-h-full flex flex-col justify-center px-4 py-8 relative">
+          <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
+            <div class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-indigo-600 shadow-lg shadow-indigo-600/30 border border-indigo-400/30 text-white font-bold text-lg mb-2">
+              ⚡
+            </div>
+            <h1 class="text-xl font-bold tracking-tight text-white">Brightloop<span class="text-indigo-400">.</span></h1>
+            <p class="text-xs font-mono uppercase tracking-wider text-slate-400 mt-1">Enterprise Subscription & Billing Engine</p>
+          </div>
+
+          <div class="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 sm:p-7 shadow-2xl">
+              <div class="mb-5 pb-4 border-b border-slate-800">
+                <h2 class="text-base font-semibold text-slate-100">Sign in to console</h2>
+                <p class="text-xs text-slate-400 mt-1">Select authorization target or enter credentials.</p>
+
+                <div class="mt-4 pt-3 border-t border-slate-800/60">
+                  <span class="text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold block mb-2">
+                    Authorization Target
+                  </span>
+                  <div class="grid grid-cols-3 gap-2">
+                    <button type="button" onclick="setLoginRole('admin')" class="p-2 rounded-lg border text-left text-xs transition-all ${state.selectedLoginRole === 'admin' ? 'border-indigo-500 bg-indigo-500/10 text-white ring-1 ring-indigo-500' : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200'}">
+                      <div class="font-semibold text-slate-200">Admin</div>
+                      <div class="text-xs text-slate-400">Full Access</div>
+                    </button>
+                    <button type="button" onclick="setLoginRole('staff')" class="p-2 rounded-lg border text-left text-xs transition-all ${state.selectedLoginRole === 'staff' ? 'border-indigo-500 bg-indigo-500/10 text-white ring-1 ring-indigo-500' : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200'}">
+                      <div class="font-semibold text-slate-200">Staff</div>
+                      <div class="text-xs text-slate-400">Billing Ops</div>
+                    </button>
+                    <button type="button" onclick="setLoginRole('customer')" class="p-2 rounded-lg border text-left text-xs transition-all ${state.selectedLoginRole === 'customer' ? 'border-indigo-500 bg-indigo-500/10 text-white ring-1 ring-indigo-500' : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200'}">
+                      <div class="font-semibold text-slate-200">Customer</div>
+                      <div class="text-xs text-slate-400">Subscriber</div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              ${state.loginError ? `
+                <div class="mb-4 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+                  ⚠️ ${state.loginError}
+                </div>
+              ` : ''}
+
+              <form onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Corporate Email</label>
+                  <input type="email" required value="${state.loginEmail}" oninput="state.loginEmail = this.value" class="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono" />
+                </div>
+
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs font-medium text-slate-300">Password</label>
+                    <span class="text-xs font-mono text-slate-400">Default: <span class="text-indigo-400">password123</span></span>
+                  </div>
+                  <div class="relative">
+                    <input type="${state.showPassword ? 'text' : 'password'}" required value="${state.loginPassword}" oninput="state.loginPassword = this.value" class="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono pr-12" />
+                    <button type="button" onclick="state.showPassword = !state.showPassword; render();" class="absolute right-2 top-2 text-xs text-slate-400 hover:text-slate-200">
+                      ${state.showPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between text-xs py-1">
+                  <span class="text-slate-400">Target Session Role:</span>
+                  <span class="font-mono text-indigo-400 uppercase text-xs font-semibold bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">${state.selectedLoginRole}</span>
+                </div>
+
+                <button type="submit" ${state.isSubmitting ? 'disabled' : ''} class="w-full py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white text-xs font-medium tracking-wide shadow-lg shadow-indigo-600/20 transition-all cursor-pointer">
+                  ${state.isSubmitting ? 'Authenticating Session...' : 'Sign in to Platform →'}
+                </button>
+              </form>
+
+              <div class="mt-5 pt-3 border-t border-slate-800 text-center">
+                <button type="button" onclick="state.isRegisterMode = true; render();" class="text-xs text-indigo-400 hover:text-indigo-300 hover:underline">
+                  Need an enterprise account? Register organization
+                </button>
+              </div>
+            </div>
+
+            <div class="mt-4 text-center text-xs text-slate-500">
+              🔒 AES-256 JWT Bearer Authentication & RBAC Enforced
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderRegisterScreen() {
+      return `
+        <div class="min-h-full flex flex-col justify-center px-4 py-8">
+          <div class="sm:mx-auto sm:w-full sm:max-w-md">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 sm:p-7 shadow-2xl">
+              <div class="mb-5 pb-3 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                  <h2 class="text-base font-semibold text-slate-100">Provision Organization Workspace</h2>
+                  <p class="text-xs text-slate-400 mt-0.5">Register enterprise credentials.</p>
+                </div>
+                <button onclick="state.isRegisterMode = false; render();" class="text-xs text-slate-400 hover:text-white">✕ Close</button>
+              </div>
+
+              ${state.loginError ? `
+                <div class="mb-4 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+                  ${state.loginError}
+                </div>
+              ` : ''}
+
+              <form onsubmit="handleRegisterSubmit(event)" class="space-y-3.5">
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Full Name</label>
+                  <input type="text" required placeholder="Elena Rostova" oninput="state.regName = this.value" class="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Corporate Email</label>
+                  <input type="email" required placeholder="name@company.com" oninput="state.regEmail = this.value" class="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Company / Organization</label>
+                  <input type="text" required placeholder="Acme Logistics Corp" oninput="state.regCompany = this.value" class="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-300 mb-1">Assigned Role</label>
+                  <select onchange="state.regRole = this.value" class="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-slate-100 font-mono">
+                    <option value="customer">Customer / Subscriber</option>
+                    <option value="staff">Internal Staff / Billing Operations</option>
+                    <option value="admin">System Administrator</option>
+                  </select>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Password</label>
+                    <input type="password" required placeholder="Min 6 chars" oninput="state.regPassword = this.value" class="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-slate-100 font-mono" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Confirm</label>
+                    <input type="password" required placeholder="Re-enter" oninput="state.regConfirm = this.value" class="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-slate-100 font-mono" />
+                  </div>
+                </div>
+
+                <button type="submit" class="w-full py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white text-xs font-medium tracking-wide shadow-lg shadow-indigo-600/20 cursor-pointer mt-2">
+                  Create Workspace Account
+                </button>
+              </form>
+
+              <div class="mt-4 pt-3 border-t border-slate-800 text-center">
+                <button type="button" onclick="state.isRegisterMode = false; render();" class="text-xs text-indigo-400 hover:underline">
+                  Already have an account? Sign in
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAppShell() {
+      const u = state.user;
+      const roleBadges = {
+        admin: 'bg-rose-500/10 text-rose-300 border-rose-500/30',
+        staff: 'bg-amber-500/10 text-amber-300 border-amber-500/30',
+        customer: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+      };
+
+      const navItems = [
+        { id: 'dashboard', name: 'Dashboard', icon: '📊', roles: ['admin', 'staff', 'customer'] },
+        { id: 'products', name: 'Products & Plans', icon: '📦', roles: ['admin', 'staff'] },
+        { id: 'subscriptions', name: 'Subscriptions', icon: '🔄', roles: ['admin', 'staff', 'customer'] },
+        { id: 'invoices', name: 'Invoices', icon: '🧾', roles: ['admin', 'staff', 'customer'] },
+        { id: 'payments', name: 'Payments', icon: '💳', roles: ['admin', 'staff'] },
+      ];
+
+      return `
+        <div class="flex h-full w-full overflow-hidden bg-slate-950">
+          <!-- Sidebar -->
+          <aside class="w-60 bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0">
+            <div>
+              <div class="h-14 px-4 flex items-center gap-2.5 border-b border-slate-800">
+                <div class="w-7 h-7 rounded bg-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow">
+                  BL
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-white flex items-center gap-1.5">
+                    Brightloop <span class="text-xs font-mono px-1 py-0.2 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">SaaS</span>
+                  </div>
+                  <div class="text-xs font-mono text-slate-400 uppercase tracking-widest">Billing Console</div>
+                </div>
+              </div>
+
+              <div class="p-3">
+                <div class="px-2 mb-2 text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold">Platform Modules</div>
+                <nav class="space-y-1">
+                  ${navItems.filter(item => item.roles.includes(state.role)).map(item => `
+                    <button onclick="setActiveTab('${item.id}')" class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg transition-all text-left ${state.activeTab === item.id ? 'bg-indigo-600/10 text-indigo-300 border border-indigo-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'}">
+                      <div class="flex items-center gap-2.5">
+                        <span>${item.icon}</span>
+                        <span>${item.name}</span>
+                      </div>
+                      ${state.activeTab === item.id ? '<div class="w-1.5 h-1.5 rounded-full bg-indigo-400"></div>' : ''}
+                    </button>
+                  `).join('')}
+                </nav>
+              </div>
+            </div>
+
+            <div class="p-3.5 border-t border-slate-800 bg-slate-950/40 flex items-center justify-between text-xs font-mono text-slate-400">
+              <span class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                Engine Active
+              </span>
+              <span>v1.4.0</span>
+            </div>
+          </aside>
+
+          <!-- Main Layout -->
+          <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <header class="h-14 bg-slate-900/70 border-b border-slate-800 px-6 flex items-center justify-between shrink-0 backdrop-blur">
+              <div class="flex items-center gap-2 text-xs">
+                <span>🏢</span>
+                <span class="font-semibold text-slate-200">${u.company}</span>
+                <span class="text-slate-400">/</span>
+                <span class="font-mono text-slate-400 capitalize">${state.activeTab}</span>
+              </div>
+
+              <!-- Profile & Logout (Strictly Immutable Session) -->
+              <div class="flex items-center gap-3">
+                <div class="text-right">
+                  <div class="text-xs font-semibold text-slate-200">${u.name}</div>
+                  <div class="text-xs font-mono text-slate-400">${u.email}</div>
+                </div>
+                <span class="px-2 py-0.5 rounded text-xs font-mono uppercase font-semibold border ${roleBadges[state.role]}">
+                  ${state.role}
+                </span>
+                <button onclick="handleLogout()" title="Logout" class="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer">
+                  🚪
+                </button>
+              </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-6 bg-slate-950">
+              <div class="max-w-6xl mx-auto space-y-6">
+                <!-- Welcome Banner -->
+                <div class="p-6 rounded-xl bg-gradient-to-r from-slate-900 via-indigo-950/20 to-slate-900 border border-slate-800 shadow-xl">
+                  <div class="flex items-center gap-2 mb-2">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                      Session Role Locked: ${state.role.toUpperCase()}
+                    </span>
+                  </div>
+                  <h1 class="text-xl font-bold text-white tracking-tight">Welcome, ${u.name}</h1>
+                  <p class="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                    Enterprise subscription management and billing portal. Authenticated under tenant 
+                    <span class="text-slate-200 font-semibold">${u.company}</span> with <span class="font-mono text-indigo-400 font-semibold uppercase">${state.role}</span> privileges.
+                  </p>
+                </div>
+
+                <!-- Security Verification Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div class="p-4 rounded-lg bg-slate-900/90 border border-slate-800">
+                    <div class="text-xs font-mono uppercase text-slate-400 font-semibold mb-1">Token Interceptor</div>
+                    <div class="text-sm font-semibold text-slate-200">Bearer Token Attached</div>
+                    <p class="text-xs text-slate-400 mt-2">
+                      Axios client injects token on outgoing requests with automatic 401 recovery.
+                    </p>
+                  </div>
+
+                  <div class="p-4 rounded-lg bg-slate-900/90 border border-slate-800">
+                    <div class="text-xs font-mono uppercase text-slate-400 font-semibold mb-1">Access Control</div>
+                    <div class="text-sm font-semibold text-slate-200">RoleGuard Isolation</div>
+                    <p class="text-xs text-slate-400 mt-2">
+                      Role is immutable throughout the session and protects routes by privilege level.
+                    </p>
+                  </div>
+
+                  <div class="p-4 rounded-lg bg-slate-900/90 border border-slate-800">
+                    <div class="text-xs font-mono uppercase text-slate-400 font-semibold mb-1">Persistence</div>
+                    <div class="text-sm font-semibold text-slate-200">LocalStorage Synchronized</div>
+                    <p class="text-xs text-slate-400 mt-2">
+                      Session keys (token, user_role, user_profile) remain intact across navigation and refresh.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </main>
+          </div>
+        </div>
+      `;
+    }
+
+    render();
+  </script>
+</body>
+
+</html>

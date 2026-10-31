@@ -1,1 +1,33 @@
+# Backend
 backend/.env
+backend/__pycache__/
+backend/*.pyc
+backend/venv/
+backend/.venv/
+
+# Frontend Dependencies & Build
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/build/
+frontend/*.local
+
+# Frontend Environment Variables
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# Logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+*.log
+
+# Editor & System Artifacts
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
