@@ -256,7 +256,9 @@ def require_role(*allowed_roles: str) -> Callable[[Any], Any]:
         normalized_allowed.add("internal_staff")
 
     def role_checker(current_user: Any = Depends(get_current_user)) -> Any:
-        user_role = str(getattr(current_user, "role", "")).strip().lower()
+        _raw_role = getattr(current_user, "role", "")
+        # Use .value if it's an enum (avoids str(UserRole.ADMIN) → 'UserRole.ADMIN')
+        user_role = (getattr(_raw_role, "value", None) or str(_raw_role)).strip().lower()
         if user_role not in normalized_allowed and user_role != "admin":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -266,3 +268,19 @@ def require_role(*allowed_roles: str) -> Callable[[Any], Any]:
 
     return role_checker
 
+
+def _check_role(user_role: str, allowed_roles: list[str]) -> bool:
+    """
+    Pure-logic helper exposing the RBAC condition for unit testing.
+
+    Mirrors the exact logic inside require_role's role_checker closure
+    WITHOUT requiring a database session or an HTTP request.
+
+    Returns True if the role would be granted, False if it would be denied.
+    """
+    normalized_allowed = {r.strip().lower() for r in allowed_roles}
+    if "staff" in normalized_allowed:
+        normalized_allowed.add("internal staff")
+        normalized_allowed.add("internal_staff")
+    normalized_user = user_role.strip().lower()
+    return normalized_user in normalized_allowed or normalized_user == "admin"

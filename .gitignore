@@ -40,6 +40,9 @@ Thumbs.db
 .coverage
 htmlcov/
 
+# SQLite test databases
+*.db
+
 # Environment files
 .env
 .env.*

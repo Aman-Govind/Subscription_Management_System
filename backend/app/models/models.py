@@ -59,6 +59,8 @@ class InvoiceStatus(str, PyEnum):
     PAID = "paid"
 
 
+# ── User ──────────────────────────────────────────────────────────────────────
+
 class User(Base):
     """Authenticated application user; passwords are stored only as hashes."""
 
@@ -74,10 +76,17 @@ class User(Base):
         DateTime(timezone=True), nullable=False, default=utc_now
     )
 
+    # ── Registration / profile columns (API-required) ─────────────────────────
+    name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    company: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    department: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
     subscriptions: Mapped[list["Subscription"]] = relationship(
         back_populates="customer", passive_deletes=True
     )
 
+    # ── hashed_password alias (auth.py write-through) ────────────────────────
     @property
     def hashed_password(self) -> str:
         return self.password_hash
@@ -86,18 +95,8 @@ class User(Base):
     def hashed_password(self, value: str) -> None:
         self.password_hash = value
 
-    @property
-    def name(self) -> str:
-        return getattr(self, "_name", self.email.split("@")[0])
 
-    @name.setter
-    def name(self, value: str) -> None:
-        self._name = value
-
-    @property
-    def is_active(self) -> bool:
-        return True
-
+# ── Product ───────────────────────────────────────────────────────────────────
 
 class Product(Base):
     """Catalog product that may have variants and appear on subscription lines."""
@@ -111,6 +110,15 @@ class Product(Base):
     cost_price: Mapped[Decimal] = mapped_column(MONEY, nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # ── Catalog status / audit columns (API-required) ─────────────────────────
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
+    )
+
     variants: Mapped[list["ProductVariant"]] = relationship(
         back_populates="product", cascade="all, delete-orphan"
     )
@@ -121,10 +129,8 @@ class Product(Base):
         back_populates="product", passive_deletes=True
     )
 
-    @property
-    def is_active(self) -> bool:
-        return True
 
+# ── ProductVariant ────────────────────────────────────────────────────────────
 
 class ProductVariant(Base):
     """Optional product configuration with a price addition."""
@@ -138,25 +144,25 @@ class ProductVariant(Base):
     variant_name: Mapped[str] = mapped_column(String(255), nullable=False)
     price_addition: Mapped[Decimal] = mapped_column(MONEY, nullable=False, default=0)
 
+    # ── API-required columns ───────────────────────────────────────────────────
+    code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
     product: Mapped["Product"] = relationship(back_populates="variants")
     subscription_lines: Mapped[list["SubscriptionLine"]] = relationship(
         back_populates="variant", passive_deletes=True
     )
 
+    # ── Field aliases (write-through properties for API compatibility) ─────────
     @property
     def name(self) -> str:
         return self.variant_name
 
     @name.setter
     def name(self, value: str) -> None:
-        self.variant_name = value
-
-    @property
-    def code(self) -> str:
-        return self.variant_name
-
-    @code.setter
-    def code(self, value: str) -> None:
         self.variant_name = value
 
     @property
@@ -167,10 +173,8 @@ class ProductVariant(Base):
     def additional_price(self, value: Decimal) -> None:
         self.price_addition = value
 
-    @property
-    def is_active(self) -> bool:
-        return True
 
+# ── Plan ──────────────────────────────────────────────────────────────────────
 
 class Plan(Base):
     """Reusable subscription pricing and lifecycle configuration."""
@@ -196,11 +200,24 @@ class Plan(Base):
     can_pause: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     auto_close: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
+    # ── API-required columns ───────────────────────────────────────────────────
+    availability: Mapped[str] = mapped_column(String(50), nullable=False, default="active")
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
+    )
+
+
     product: Mapped["Product | None"] = relationship(back_populates="plans")
     subscriptions: Mapped[list["Subscription"]] = relationship(
         back_populates="plan", passive_deletes=True
     )
 
+    # ── Field aliases (write-through properties for API compatibility) ─────────
     @property
     def price(self) -> Decimal:
         return self.base_cost
@@ -211,19 +228,12 @@ class Plan(Base):
 
     @property
     def billing_frequency(self) -> str:
+        """Read billing_cycle as a plain string for API serialization."""
         return self.billing_cycle.value if hasattr(self.billing_cycle, "value") else str(self.billing_cycle)
 
     @billing_frequency.setter
     def billing_frequency(self, value: str) -> None:
         self.billing_cycle = BillingCycle(value)
-
-    @property
-    def availability(self) -> str:
-        return "active"
-
-    @property
-    def is_active(self) -> bool:
-        return True
 
     @property
     def subscribers_count(self) -> int:
@@ -233,6 +243,8 @@ class Plan(Base):
     def product_name(self) -> str | None:
         return self.product.name if self.product else None
 
+
+# ── Subscription ──────────────────────────────────────────────────────────────
 
 class Subscription(Base):
     """Customer subscription and its lifecycle state."""
@@ -272,6 +284,8 @@ class Subscription(Base):
     )
 
 
+# ── SubscriptionLine ──────────────────────────────────────────────────────────
+
 class SubscriptionLine(Base):
     """Priced product line belonging to a subscription."""
 
@@ -299,8 +313,10 @@ class SubscriptionLine(Base):
     )
 
 
+# ── TaxRule ───────────────────────────────────────────────────────────────────
+
 class TaxRule(Base):
-    """Configured percentage-based tax rule."""
+    """Configured percentage-based or fixed tax rule."""
 
     __tablename__ = "tax_rules"
 
@@ -308,6 +324,20 @@ class TaxRule(Base):
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     percentage: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
+    # ── API-required columns ───────────────────────────────────────────────────
+    tax_type: Mapped[str] = mapped_column(String(50), nullable=False, default="percentage")
+    country: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_inclusive: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
+    )
+
+    # ── Rate alias: API uses .rate, DB column is .percentage ──────────────────
     @property
     def rate(self) -> Decimal:
         return self.percentage
@@ -316,10 +346,8 @@ class TaxRule(Base):
     def rate(self, value: Decimal) -> None:
         self.percentage = value
 
-    @property
-    def is_active(self) -> bool:
-        return True
 
+# ── DiscountRule ──────────────────────────────────────────────────────────────
 
 class DiscountRule(Base):
     """Configured fixed or percentage discount with optional usage cap."""
@@ -337,6 +365,8 @@ class DiscountRule(Base):
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
+
+# ── Invoice ───────────────────────────────────────────────────────────────────
 
 class Invoice(Base):
     """Invoice generated for a subscription."""
@@ -363,6 +393,8 @@ class Invoice(Base):
         back_populates="invoice", passive_deletes=True
     )
 
+
+# ── Payment ───────────────────────────────────────────────────────────────────
 
 class Payment(Base):
     """Recorded invoice payment; no card credentials are stored."""

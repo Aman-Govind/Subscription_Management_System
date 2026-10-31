@@ -48,7 +48,7 @@ class ProductVariantResponse(BaseModel):
     id: int
     product_id: int
     name: str
-    code: str
+    code: str | None = None   # nullable in DB; legacy rows may have no code
     additional_price: Decimal
     is_active: bool
     created_at: datetime

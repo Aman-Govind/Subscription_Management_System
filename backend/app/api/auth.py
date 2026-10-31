@@ -78,7 +78,7 @@ def register(
     token_payload = {
         "sub": new_user.email,
         "email": new_user.email,
-        "role": new_user.role,
+        "role": getattr(new_user.role, "value", str(new_user.role)),
         "id": new_user.id,
     }
     token = create_access_token(token_payload)
@@ -121,7 +121,7 @@ def login(
     token_payload = {
         "sub": user.email,
         "email": user.email,
-        "role": user.role,
+        "role": getattr(user.role, "value", str(user.role)),
         "id": user.id,
     }
     token = create_access_token(token_payload)

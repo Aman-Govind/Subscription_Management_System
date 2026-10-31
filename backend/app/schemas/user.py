@@ -68,7 +68,7 @@ class UserLogin(BaseModel):
 class UserResponse(BaseModel):
     """Schema returned for user profile details."""
     id: int
-    name: str
+    name: str | None = None   # nullable in DB; existing users may lack a name
     email: str
     company: str | None = None
     department: str | None = None
@@ -77,6 +77,7 @@ class UserResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
 
 
 class TokenResponse(BaseModel):

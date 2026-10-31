@@ -52,9 +52,10 @@ def list_plans(
     if product_id is not None:
         query = query.filter(Plan.product_id == product_id)
     if billing_frequency:
-        query = query.filter(Plan.billing_frequency.ilike(billing_frequency.strip()))
+        # billing_frequency is a Python property; filter must use the real DB column billing_cycle
+        query = query.filter(Plan.billing_cycle.ilike(billing_frequency.strip()))
     if availability:
-        query = query.filter(Plan.availability.ilike(availability.strip()))
+        query = query.filter(Plan.availability.ilike(availability.strip()))  # real mapped column
     if is_active is not None:
         query = query.filter(Plan.is_active == is_active)
     if search:
