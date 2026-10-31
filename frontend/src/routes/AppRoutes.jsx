@@ -7,30 +7,10 @@ import AppLayout from '../components/layout/AppLayout';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 import Dashboard from '../pages/Dashboard';
+import Products from '../pages/Products';
+import Subscriptions from '../pages/Subscriptions';
 
-// Module placeholders during phase execution
-const ProductsPlaceholder = () => (
-  <div className="p-8 border border-slate-800 bg-slate-900/60 rounded-xl text-center">
-    <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold">
-      Products & Plans Catalog
-    </h3>
-    <p className="text-xs text-slate-400 mt-1">
-      Master catalog management for subscriptions and plan tiers.
-    </p>
-  </div>
-);
-
-const SubscriptionsPlaceholder = () => (
-  <div className="p-8 border border-slate-800 bg-slate-900/60 rounded-xl text-center">
-    <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold">
-      Subscription Lifecycle Pipeline
-    </h3>
-    <p className="text-xs text-slate-400 mt-1">
-      Lifecycle transitions from Draft to Active subscription status.
-    </p>
-  </div>
-);
-
+// Placeholders for subsequent modules
 const InvoicesPlaceholder = () => (
   <div className="p-8 border border-slate-800 bg-slate-900/60 rounded-xl text-center">
     <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold">
@@ -78,22 +58,22 @@ export const AppRoutes = () => {
       >
         <Route path="/dashboard" element={<Dashboard />} />
 
-        {/* Products (Admin & Staff Only) */}
+        {/* Master Data / Products (Admin & Staff Only) */}
         <Route
           path="/products"
           element={
             <RoleGuard allowedRoles={['admin', 'staff']}>
-              <ProductsPlaceholder />
+              <Products />
             </RoleGuard>
           }
         />
 
-        {/* Subscriptions (Admin, Staff, Customer) */}
+        {/* Subscriptions Pipeline (Admin, Staff, Customer) */}
         <Route
           path="/subscriptions"
           element={
             <RoleGuard allowedRoles={['admin', 'staff', 'customer']}>
-              <SubscriptionsPlaceholder />
+              <Subscriptions />
             </RoleGuard>
           }
         />

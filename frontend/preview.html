@@ -68,20 +68,15 @@
         try { return JSON.parse(localStorage.getItem('user_profile')) || null; } catch { return null; }
       })(),
       activeTab: 'dashboard',
-      productsSubTab: 'products', // 'products' | 'plans'
+      productsSubTab: 'products',
+      subStatusFilter: 'all',
       selectedLoginRole: 'admin',
       loginEmail: 'admin@brightloop.io',
       loginPassword: 'password123',
       showPassword: false,
       isSubmitting: false,
       loginError: '',
-      isRegisterMode: false,
-      regName: '',
-      regEmail: '',
-      regCompany: '',
-      regRole: 'customer',
-      regPassword: '',
-      regConfirm: ''
+      pipelineSubId: null,
     };
 
     const PRODUCTS_DATA = [
@@ -131,11 +126,70 @@
       { name: 'Enterprise Core — Weekly Sprint', product: 'Enterprise Cloud Core', freq: 'weekly', price: 8000, mrr: 34666, status: 'active', subs: 24 },
       { name: 'Enterprise Core — Monthly Standard', product: 'Enterprise Cloud Core', freq: 'monthly', price: 32000, mrr: 32000, status: 'active', subs: 82 },
       { name: 'Enterprise Core — Annual Commitment', product: 'Enterprise Cloud Core', freq: 'yearly', price: 350000, mrr: 29166, status: 'active', subs: 16 },
-      { name: 'Revenue Intelligence — Weekly', product: 'Revenue Intelligence Platform', freq: 'weekly', price: 3500, mrr: 15166, status: 'active', subs: 12 },
       { name: 'Revenue Intelligence — Monthly', product: 'Revenue Intelligence Platform', freq: 'monthly', price: 14000, mrr: 14000, status: 'active', subs: 45 },
       { name: 'API Gateway — Monthly', product: 'API Gateway & Event Dispatcher', freq: 'monthly', price: 8000, mrr: 8000, status: 'active', subs: 38 },
-      { name: 'API Gateway — Yearly Enterprise', product: 'API Gateway & Event Dispatcher', freq: 'yearly', price: 85000, mrr: 7083, status: 'beta', subs: 4 },
     ];
+
+    let SUBSCRIPTIONS_DATA = [
+      {
+        id: 'sub_001',
+        num: 'SUB-2026-0041',
+        customer: 'Acme Global Logistics',
+        plan: 'Enterprise Cloud Core (+Odoo Sync)',
+        freq: 'monthly',
+        nextBilling: '2026-11-01',
+        total: 38420.8,
+        status: 'active'
+      },
+      {
+        id: 'sub_002',
+        num: 'SUB-2026-0042',
+        customer: 'Vanguard Retail Systems',
+        plan: 'Revenue Intelligence Platform (+Odoo Sync)',
+        freq: 'monthly',
+        nextBilling: '2026-12-05',
+        total: 17180.8,
+        status: 'quotation'
+      },
+      {
+        id: 'sub_003',
+        num: 'SUB-2026-0043',
+        customer: 'Nexis Media Works',
+        plan: 'Revenue Intelligence Platform',
+        freq: 'weekly',
+        nextBilling: '2026-11-03',
+        total: 4130,
+        status: 'confirmed'
+      },
+      {
+        id: 'sub_004',
+        num: 'SUB-2026-0044',
+        customer: 'Hyperion BioTech',
+        plan: 'Enterprise Cloud Core (Dedicated VPS)',
+        freq: 'yearly',
+        nextBilling: '2027-12-01',
+        total: 417956,
+        status: 'draft'
+      },
+      {
+        id: 'sub_005',
+        num: 'SUB-2026-0039',
+        customer: 'Solaris FinTech Corp',
+        plan: 'API Gateway & Event Dispatcher',
+        freq: 'monthly',
+        nextBilling: '2026-10-01',
+        total: 9440,
+        status: 'closed'
+      }
+    ];
+
+    const ALLOWED_FLOWS = {
+      draft: ['quotation', 'closed'],
+      quotation: ['confirmed', 'draft', 'closed'],
+      confirmed: ['active', 'closed'],
+      active: ['closed'],
+      closed: ['draft']
+    };
 
     function setLoginRole(roleKey) {
       const p = PRESET_USERS[roleKey];
@@ -200,6 +254,17 @@
         return;
       }
       state.activeTab = tab;
+      render();
+    }
+
+    function transitionSubscription(subId, newStatus) {
+      SUBSCRIPTIONS_DATA = SUBSCRIPTIONS_DATA.map(s => {
+        if (s.id === subId) {
+          return { ...s, status: newStatus };
+        }
+        return s;
+      });
+      state.pipelineSubId = null;
       render();
     }
 
@@ -365,20 +430,21 @@
               <div class="max-w-6xl mx-auto space-y-6">
                 ${state.activeTab === 'dashboard' ? renderDashboard() : ''}
                 ${state.activeTab === 'products' ? renderProductsPage() : ''}
-                ${state.activeTab === 'subscriptions' ? '<div class="p-8 border border-slate-800 rounded-xl bg-slate-900 text-center font-mono text-xs text-slate-400">🔄 Subscriptions Module</div>' : ''}
-                ${state.activeTab === 'invoices' ? '<div class="p-8 border border-slate-800 rounded-xl bg-slate-900 text-center font-mono text-xs text-slate-400">🧾 Invoices Module</div>' : ''}
+                ${state.activeTab === 'subscriptions' ? renderSubscriptionsPage() : ''}
+                ${state.activeTab === 'invoices' ? '<div class="p-8 border border-slate-800 rounded-xl bg-slate-900 text-center font-mono text-xs text-slate-400">🧾 Invoices & Tax Engine</div>' : ''}
                 ${state.activeTab === 'payments' ? '<div class="p-8 border border-slate-800 rounded-xl bg-slate-900 text-center font-mono text-xs text-slate-400">💳 Payments Module</div>' : ''}
               </div>
             </main>
           </div>
         </div>
+
+        ${state.pipelineSubId ? renderPipelineModal() : ''}
       `;
     }
 
     function renderDashboard() {
       const u = state.user;
       return `
-        <!-- Welcome Header -->
         <div class="p-6 rounded-xl bg-gradient-to-r from-slate-900 via-indigo-950/20 to-slate-900 border border-slate-800 shadow-xl">
           <div class="flex items-center gap-2 mb-2">
             <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
@@ -393,7 +459,6 @@
           </p>
         </div>
 
-        <!-- 4 High-Impact Metric Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
             <div class="text-xs font-mono uppercase text-slate-400 font-semibold">Active Subscriptions</div>
@@ -419,54 +484,11 @@
             <div class="text-xs text-slate-400 mt-1">Past 7-day grace period</div>
           </div>
         </div>
-
-        <!-- Recent Billing Activities Table -->
-        <div class="border border-slate-800 rounded-xl bg-slate-900 overflow-hidden shadow-sm">
-          <div class="p-4 border-b border-slate-800 flex items-center justify-between">
-            <h3 class="text-xs font-mono uppercase tracking-wider text-slate-200 font-semibold">Recent Billing Ledger</h3>
-            <span class="text-xs font-mono text-slate-400">Real-time sync</span>
-          </div>
-          <table class="w-full text-left text-xs">
-            <thead class="bg-slate-950/70 border-b border-slate-800 text-slate-400 font-mono uppercase text-[11px]">
-              <tr>
-                <th class="py-3 px-4">Invoice ID</th>
-                <th class="py-3 px-4">Subscriber</th>
-                <th class="py-3 px-4">Service</th>
-                <th class="py-3 px-4">Amount</th>
-                <th class="py-3 px-4">Status</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-800">
-              <tr>
-                <td class="py-3 px-4 font-mono text-indigo-400">INV-2026-0891</td>
-                <td class="py-3 px-4 text-slate-200">Acme Global Logistics</td>
-                <td class="py-3 px-4 text-slate-300">Enterprise Cloud Core (Monthly)</td>
-                <td class="py-3 px-4 font-mono text-white font-bold">₹34,500</td>
-                <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">PAID</span></td>
-              </tr>
-              <tr>
-                <td class="py-3 px-4 font-mono text-indigo-400">INV-2026-0892</td>
-                <td class="py-3 px-4 text-slate-200">Vanguard Retail Systems</td>
-                <td class="py-3 px-4 text-slate-300">Odoo Connector Pro (+₹560 Var)</td>
-                <td class="py-3 px-4 font-mono text-white font-bold">₹14,560</td>
-                <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">PENDING</span></td>
-              </tr>
-              <tr>
-                <td class="py-3 px-4 font-mono text-indigo-400">INV-2026-0894</td>
-                <td class="py-3 px-4 text-slate-200">Hyperion BioTech</td>
-                <td class="py-3 px-4 text-slate-300">Custom API Cluster (Yearly)</td>
-                <td class="py-3 px-4 font-mono text-white font-bold">₹88,000</td>
-                <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-rose-500/10 text-rose-400 border border-rose-500/20">OVERDUE</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       `;
     }
 
     function renderProductsPage() {
       return `
-        <!-- Products & Plans View -->
         <div class="space-y-5">
           <div class="flex items-center justify-between pb-4 border-b border-slate-800">
             <div>
@@ -555,6 +577,137 @@
               </table>
             </div>
           `}
+        </div>
+      `;
+    }
+
+    function renderSubscriptionsPage() {
+      const statusStyles = {
+        draft: 'bg-slate-800 text-slate-400 border-slate-700',
+        quotation: 'bg-sky-500/10 text-sky-400 border-sky-500/30',
+        confirmed: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
+        active: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+        closed: 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+      };
+
+      const filtered = SUBSCRIPTIONS_DATA.filter(s => 
+        state.subStatusFilter === 'all' || s.status === state.subStatusFilter
+      );
+
+      return `
+        <div class="space-y-5">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">🔄 Subscription Lifecycle Pipeline</h2>
+              <p class="text-xs text-slate-400 mt-0.5">Interactive state transitions: Draft ➔ Quotation ➔ Confirmed ➔ Active ➔ Closed.</p>
+            </div>
+          </div>
+
+          <!-- Pipeline Tabs -->
+          <div class="flex flex-wrap items-center gap-1.5 bg-slate-900/60 p-1.5 rounded-xl border border-slate-800 text-xs">
+            ${['all', 'draft', 'quotation', 'confirmed', 'active', 'closed'].map(st => `
+              <button onclick="state.subStatusFilter = '${st}'; render();" class="px-3 py-1.5 rounded-lg capitalize font-medium transition-all ${state.subStatusFilter === st ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-400 hover:text-white'}">
+                ${st} (${st === 'all' ? SUBSCRIPTIONS_DATA.length : SUBSCRIPTIONS_DATA.filter(s => s.status === st).length})
+              </button>
+            `).join('')}
+          </div>
+
+          <!-- Subscriptions Scannable Table -->
+          <div class="border border-slate-800 rounded-xl bg-slate-900 overflow-hidden shadow-sm">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-950/70 border-b border-slate-800 text-slate-400 font-mono uppercase text-[11px]">
+                <tr>
+                  <th class="py-3 px-4">Subscription #</th>
+                  <th class="py-3 px-4">Subscriber</th>
+                  <th class="py-3 px-4">Plan & Add-ons</th>
+                  <th class="py-3 px-4">Cadence</th>
+                  <th class="py-3 px-4">Next Renewal</th>
+                  <th class="py-3 px-4">Total Billed</th>
+                  <th class="py-3 px-4">Pipeline Status</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800">
+                ${filtered.map(s => `
+                  <tr class="hover:bg-slate-800/40">
+                    <td class="py-3.5 px-4 font-mono font-bold text-indigo-400">${s.num}</td>
+                    <td class="py-3.5 px-4 font-semibold text-slate-200">${s.customer}</td>
+                    <td class="py-3.5 px-4 text-slate-300">${s.plan}</td>
+                    <td class="py-3.5 px-4 capitalize font-mono text-xs">${s.freq}</td>
+                    <td class="py-3.5 px-4 font-mono text-slate-300">${s.nextBilling}</td>
+                    <td class="py-3.5 px-4 font-mono font-bold text-white">₹${Math.round(s.total).toLocaleString('en-IN')}</td>
+                    <td class="py-3.5 px-4">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase font-semibold border ${statusStyles[s.status]}">
+                        ${s.status}
+                      </span>
+                    </td>
+                    <td class="py-3.5 px-4 text-right">
+                      <button onclick="state.pipelineSubId = '${s.id}'; render();" class="px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600 hover:text-white border border-indigo-500/30 transition-all">
+                        Pipeline Controller ➔
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderPipelineModal() {
+      const sub = SUBSCRIPTIONS_DATA.find(s => s.id === state.pipelineSubId);
+      if (!sub) return '';
+
+      const stages = ['draft', 'quotation', 'confirmed', 'active', 'closed'];
+      const allowed = ALLOWED_FLOWS[sub.status] || [];
+
+      return `
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="state.pipelineSubId = null; render();"></div>
+          <div class="relative w-full max-w-xl bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-6 z-10 text-slate-100">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+              <div>
+                <h3 class="text-base font-bold text-white">Pipeline: ${sub.num}</h3>
+                <p class="text-xs text-slate-400 mt-0.5">${sub.customer} • Total: ₹${Math.round(sub.total).toLocaleString('en-IN')}</p>
+              </div>
+              <button onclick="state.pipelineSubId = null; render();" class="text-slate-400 hover:text-white text-xs">✕ Close</button>
+            </div>
+
+            <!-- Stepper -->
+            <div class="p-3 bg-slate-950 rounded-lg border border-slate-800 mb-4">
+              <div class="text-[10px] font-mono uppercase text-slate-500 mb-2 font-semibold">Workflow Progression</div>
+              <div class="flex items-center justify-between">
+                ${stages.map((st, i) => `
+                  <div class="flex flex-col items-center">
+                    <div class="w-6 h-6 rounded-full border text-[10px] font-mono flex items-center justify-center ${st === sub.status ? 'bg-indigo-600 text-white border-indigo-400 font-bold' : 'bg-slate-900 border-slate-700 text-slate-500'}">
+                      ${i + 1}
+                    </div>
+                    <span class="text-[10px] font-mono uppercase mt-1 ${st === sub.status ? 'text-indigo-400 font-bold' : 'text-slate-500'}">${st}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="space-y-2 mb-4">
+              <div class="text-xs font-mono uppercase text-slate-400 font-semibold mb-1">Permitted State Transitions</div>
+              ${allowed.map(target => `
+                <div class="p-2.5 rounded-lg border border-slate-800 bg-slate-950 flex items-center justify-between">
+                  <span class="text-xs text-slate-200">Transition to <span class="font-mono uppercase font-bold text-indigo-400">${target}</span></span>
+                  <button onclick="transitionSubscription('${sub.id}', '${target}')" class="px-3 py-1 rounded text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm">
+                    Execute ➔
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+
+            <div class="pt-3 border-t border-slate-800 text-right">
+              <button onclick="state.pipelineSubId = null; render();" class="px-3 py-1.5 rounded-lg border border-slate-800 text-xs text-slate-400 hover:text-white">
+                Dismiss
+              </button>
+            </div>
+          </div>
         </div>
       `;
     }
