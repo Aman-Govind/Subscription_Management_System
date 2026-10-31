@@ -12,7 +12,7 @@ pymysql==1.1.1              # MySQL driver (pure Python, no C extensions needed)
 cryptography==43.0.3        # Required by PyMySQL for secure auth
 
 # ── Validation & Serialization ────────────────────────────────────────────────
-pydantic==2.10.1            # Data validation (FastAPI uses this internally)
+pydantic>=2.12,<3.0         # Python 3.14-compatible data validation
 
 # ── Testing ───────────────────────────────────────────────────────────────────
 pytest==8.3.3               # Test runner used by tests/test_services.py
