@@ -11,6 +11,8 @@ from app.services.analytics_service import generate_dashboard_analytics
 from app.services.billing_service import (
     calculate_annualized_cost,
     calculate_monthly_cost,
+    calculate_monthly_equivalent,
+    calculate_next_billing_date,
     calculate_next_renewal,
 )
 from app.services.expense_service import (
@@ -146,3 +148,31 @@ def test_analytics_and_notifications_exclude_inactive_items():
     assert analytics["highest_spending_category"] == "Entertainment"
     notifications = generate_renewal_notifications(items, TODAY)
     assert [notice["subscription_id"] for notice in notifications] == [1]
+
+
+def test_calculate_monthly_equivalent_and_annualized_cost():
+    # weekly: (10 * 52) / 12 = 43.3333... -> 43.33 (ROUND_HALF_UP)
+    assert calculate_monthly_equivalent(Decimal("10.00"), "weekly") == Decimal("43.33")
+    assert calculate_monthly_equivalent(Decimal("29.99"), "monthly") == Decimal("29.99")
+    # yearly: 120 / 12 = 10.00
+    assert calculate_monthly_equivalent(Decimal("120.00"), "yearly") == Decimal("10.00")
+
+    # annualized: monthly_equivalent * 12
+    assert calculate_annualized_cost(Decimal("43.33")) == Decimal("519.96")
+    assert calculate_annualized_cost(Decimal("10.00")) == Decimal("120.00")
+
+
+@pytest.mark.parametrize(
+    ("start", "cycle", "expected"),
+    [
+        (date(2026, 3, 1), "daily", date(2026, 3, 2)),
+        (date(2026, 3, 1), "weekly", date(2026, 3, 8)),
+        (date(2024, 1, 31), "monthly", date(2024, 2, 29)),  # Leap year
+        (date(2025, 1, 31), "monthly", date(2025, 2, 28)),  # Non-leap year
+        (date(2024, 2, 29), "yearly", date(2025, 2, 28)),   # Leap to non-leap
+        (date(2023, 2, 28), "yearly", date(2024, 2, 28)),
+    ],
+)
+def test_calculate_next_billing_date_handles_relativedelta_rules(start, cycle, expected):
+    assert calculate_next_billing_date(start, cycle) == expected
+
