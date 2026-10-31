@@ -9,29 +9,8 @@ import Register from '../pages/Register';
 import Dashboard from '../pages/Dashboard';
 import Products from '../pages/Products';
 import Subscriptions from '../pages/Subscriptions';
-
-// Placeholders for subsequent modules
-const InvoicesPlaceholder = () => (
-  <div className="p-8 border border-slate-800 bg-slate-900/60 rounded-xl text-center">
-    <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold">
-      Invoices & Tax Engine
-    </h3>
-    <p className="text-xs text-slate-400 mt-1">
-      Billing invoice generation with tax and discount breakdowns.
-    </p>
-  </div>
-);
-
-const PaymentsPlaceholder = () => (
-  <div className="p-8 border border-slate-800 bg-slate-900/60 rounded-xl text-center">
-    <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold">
-      Payment Reconciliation
-    </h3>
-    <p className="text-xs text-slate-400 mt-1">
-      Recording and reconciliation of manual and automated payments.
-    </p>
-  </div>
-);
+import Invoices from '../pages/Invoices';
+import Payments from '../pages/Payments';
 
 export const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
@@ -83,7 +62,7 @@ export const AppRoutes = () => {
           path="/invoices"
           element={
             <RoleGuard allowedRoles={['admin', 'staff', 'customer']}>
-              <InvoicesPlaceholder />
+              <Invoices />
             </RoleGuard>
           }
         />
@@ -93,7 +72,7 @@ export const AppRoutes = () => {
           path="/payments"
           element={
             <RoleGuard allowedRoles={['admin', 'staff']}>
-              <PaymentsPlaceholder />
+              <Payments />
             </RoleGuard>
           }
         />

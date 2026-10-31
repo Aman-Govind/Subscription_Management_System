@@ -77,6 +77,14 @@
       isSubmitting: false,
       loginError: '',
       pipelineSubId: null,
+      invoiceFilter: 'all',
+      invoiceSearch: '',
+      selectedInvoiceId: null,
+      paymentModalInvoice: null,
+      isSelectInvoiceModalOpen: false,
+      paymentMethodFilter: 'all',
+      paymentSearch: '',
+      toastMessage: null,
     };
 
     const PRODUCTS_DATA = [
@@ -135,6 +143,7 @@
         id: 'sub_001',
         num: 'SUB-2026-0041',
         customer: 'Acme Global Logistics',
+        customerEmail: 'customer@acme.corp',
         plan: 'Enterprise Cloud Core (+Odoo Sync)',
         freq: 'monthly',
         nextBilling: '2026-11-01',
@@ -145,6 +154,7 @@
         id: 'sub_002',
         num: 'SUB-2026-0042',
         customer: 'Vanguard Retail Systems',
+        customerEmail: 'ops@vanguardretail.in',
         plan: 'Revenue Intelligence Platform (+Odoo Sync)',
         freq: 'monthly',
         nextBilling: '2026-12-05',
@@ -155,6 +165,7 @@
         id: 'sub_003',
         num: 'SUB-2026-0043',
         customer: 'Nexis Media Works',
+        customerEmail: 'billing@nexismedia.io',
         plan: 'Revenue Intelligence Platform',
         freq: 'weekly',
         nextBilling: '2026-11-03',
@@ -165,6 +176,7 @@
         id: 'sub_004',
         num: 'SUB-2026-0044',
         customer: 'Hyperion BioTech',
+        customerEmail: 'finance@hyperionbio.com',
         plan: 'Enterprise Cloud Core (Dedicated VPS)',
         freq: 'yearly',
         nextBilling: '2027-12-01',
@@ -175,12 +187,146 @@
         id: 'sub_005',
         num: 'SUB-2026-0039',
         customer: 'Solaris FinTech Corp',
+        customerEmail: 'admin@solarisfin.com',
         plan: 'API Gateway & Event Dispatcher',
         freq: 'monthly',
         nextBilling: '2026-10-01',
         total: 9440,
         status: 'closed'
       }
+    ];
+
+    let INVOICES_DATA = [
+      {
+        id: 'inv_001',
+        invoiceNumber: 'INV-2026-0891',
+        subscriptionNumber: 'SUB-2026-0041',
+        customer: 'Acme Global Logistics',
+        customerEmail: 'customer@acme.corp',
+        billingAddress: '42 Freight Highway, Sector 5, Bengaluru, KA',
+        status: 'paid',
+        invoiceDate: '2026-10-01',
+        dueDate: '2026-10-31',
+        paidDate: '2026-10-28',
+        paymentMethod: 'Bank Wire Transfer',
+        paymentReference: 'WIRE-AXIS-992014',
+        lineItems: [
+          { description: 'Enterprise Cloud Core (Monthly Commitment)', quantity: 1, unitPrice: 32000, subtotal: 32000 },
+          { description: 'Odoo Enterprise Connector Sync Add-on (+₹560)', quantity: 1, unitPrice: 560, subtotal: 560 },
+        ],
+        subtotal: 32560,
+        discountType: 'percentage',
+        discountValue: 0,
+        discountAmount: 0,
+        taxableAmount: 32560,
+        taxRate: 18,
+        taxAmount: 5860.8,
+        totalAmount: 38420.8,
+      },
+      {
+        id: 'inv_002',
+        invoiceNumber: 'INV-2026-0892',
+        subscriptionNumber: 'SUB-2026-0042',
+        customer: 'Vanguard Retail Systems',
+        customerEmail: 'ops@vanguardretail.in',
+        billingAddress: 'Unit 12 Tech Park, Bandra Kurla Complex, Mumbai, MH',
+        status: 'confirmed',
+        invoiceDate: '2026-10-15',
+        dueDate: '2026-11-02',
+        paidDate: null,
+        paymentMethod: null,
+        paymentReference: null,
+        lineItems: [
+          { description: 'Revenue Intelligence Platform (Monthly Cadence)', quantity: 1, unitPrice: 14000, subtotal: 14000 },
+          { description: 'Odoo Invoicing Webhook Integration (+₹560)', quantity: 1, unitPrice: 560, subtotal: 560 },
+        ],
+        subtotal: 14560,
+        discountType: 'percentage',
+        discountValue: 5,
+        discountAmount: 728,
+        taxableAmount: 13832,
+        taxRate: 18,
+        taxAmount: 2489.76,
+        totalAmount: 16321.76,
+      },
+      {
+        id: 'inv_003',
+        invoiceNumber: 'INV-2026-0893',
+        subscriptionNumber: 'SUB-2026-0043',
+        customer: 'Nexis Media Works',
+        customerEmail: 'billing@nexismedia.io',
+        billingAddress: 'Cyber City Hub, Sector 25, Gurugram, HR',
+        status: 'paid',
+        invoiceDate: '2026-10-23',
+        dueDate: '2026-10-30',
+        paidDate: '2026-10-29',
+        paymentMethod: 'UPI Auto-Debit',
+        paymentReference: 'UPI-ICICI-881203',
+        lineItems: [
+          { description: 'Weekly High-Volume Notification Engine', quantity: 2, unitPrice: 3500, subtotal: 7000 },
+        ],
+        subtotal: 7000,
+        discountType: 'percentage',
+        discountValue: 0,
+        discountAmount: 0,
+        taxableAmount: 7000,
+        taxRate: 18,
+        taxAmount: 1260,
+        totalAmount: 8260,
+      },
+      {
+        id: 'inv_004',
+        invoiceNumber: 'INV-2026-0894',
+        subscriptionNumber: 'SUB-2026-0044',
+        customer: 'Zeta Analytics Ltd',
+        customerEmail: 'finance@zeta-analytics.io',
+        billingAddress: '99 IT Corridor, Whitefield, Bengaluru, KA',
+        status: 'draft',
+        invoiceDate: '2026-10-29',
+        dueDate: '2026-11-15',
+        paidDate: null,
+        paymentMethod: null,
+        paymentReference: null,
+        lineItems: [
+          { description: 'API Gateway & Event Dispatcher (Dedicated Cluster)', quantity: 2, unitPrice: 8000, subtotal: 16000 },
+          { description: 'Odoo REST / XML-RPC Bridge (+₹560)', quantity: 1, unitPrice: 560, subtotal: 560 },
+        ],
+        subtotal: 16560,
+        discountType: 'percentage',
+        discountValue: 0,
+        discountAmount: 0,
+        taxableAmount: 16560,
+        taxRate: 18,
+        taxAmount: 2980.8,
+        totalAmount: 19540.8,
+      }
+    ];
+
+    let PAYMENTS_DATA = [
+      {
+        id: 'pay_001',
+        paymentNumber: 'PAY-2026-0412',
+        invoiceNumber: 'INV-2026-0891',
+        customer: 'Acme Global Logistics',
+        amount: 38420.8,
+        paymentMethod: 'Bank Wire Transfer',
+        paymentDate: '2026-10-28',
+        referenceNumber: 'WIRE-AXIS-992014',
+        status: 'settled',
+        notes: 'Monthly enterprise cluster renewal settled in full.',
+      },
+      {
+        id: 'pay_002',
+        paymentNumber: 'PAY-2026-0413',
+        invoiceNumber: 'INV-2026-0893',
+        customer: 'Nexis Media Works',
+        amount: 8260,
+        paymentMethod: 'UPI Auto-Debit',
+        paymentDate: '2026-10-29',
+        referenceNumber: 'UPI-ICICI-881203',
+        status: 'settled',
+        notes: 'Automated weekly mandate debit clearance.',
+      },
     ];
 
     const ALLOWED_FLOWS = {
@@ -266,6 +412,105 @@
       });
       state.pipelineSubId = null;
       render();
+    }
+
+    function generateDueInvoices() {
+      const activeSubs = SUBSCRIPTIONS_DATA.filter(s => s.status === 'active');
+      let createdCount = 0;
+
+      activeSubs.forEach(sub => {
+        const subtotal = sub.total / 1.18;
+        const tax = sub.total - subtotal;
+        const newInvoice = {
+          id: 'inv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          invoiceNumber: 'INV-2026-' + Math.floor(1000 + Math.random() * 9000),
+          subscriptionNumber: sub.num,
+          customer: sub.customer,
+          customerEmail: sub.customerEmail || 'billing@' + sub.customer.toLowerCase().replace(/[^a-z]/g, '') + '.com',
+          billingAddress: 'Corporate Headquarters, Technology Park, Bengaluru',
+          status: 'confirmed',
+          invoiceDate: '2026-10-31',
+          dueDate: '2026-11-15',
+          paidDate: null,
+          paymentMethod: null,
+          paymentReference: null,
+          lineItems: [
+            { description: sub.plan + ' (Recurring Cycle)', quantity: 1, unitPrice: Math.round(subtotal), subtotal: Math.round(subtotal) }
+          ],
+          subtotal: Math.round(subtotal),
+          discountType: 'percentage',
+          discountValue: 0,
+          discountAmount: 0,
+          taxableAmount: Math.round(subtotal),
+          taxRate: 18,
+          taxAmount: Math.round(tax),
+          totalAmount: Math.round(sub.total),
+        };
+
+        INVOICES_DATA.unshift(newInvoice);
+        createdCount++;
+      });
+
+      showToast(`Generated ${createdCount} recurring invoice(s) from due active subscriptions.`);
+      render();
+    }
+
+    function confirmInvoice(invoiceId) {
+      INVOICES_DATA = INVOICES_DATA.map(inv => {
+        if (inv.id === invoiceId) {
+          return { ...inv, status: 'confirmed' };
+        }
+        return inv;
+      });
+      showToast('Invoice confirmed and published for payment settlement.');
+      render();
+    }
+
+    function recordPaymentDirect(invoiceId, amount, method, refNumber) {
+      const inv = INVOICES_DATA.find(i => i.id === invoiceId);
+      if (!inv) return;
+
+      const paymentDate = new Date().toISOString().split('T')[0];
+      const newPayment = {
+        id: 'pay_' + Date.now(),
+        paymentNumber: 'PAY-2026-' + Math.floor(1000 + Math.random() * 9000),
+        invoiceNumber: inv.invoiceNumber,
+        customer: inv.customer,
+        amount: Number(amount),
+        paymentMethod: method,
+        paymentDate: paymentDate,
+        referenceNumber: refNumber || ('UTR-' + Date.now().toString().slice(-6)),
+        status: 'settled',
+        notes: `Remittance settled for ${inv.invoiceNumber}`,
+      };
+
+      PAYMENTS_DATA.unshift(newPayment);
+
+      INVOICES_DATA = INVOICES_DATA.map(i => {
+        if (i.id === invoiceId) {
+          return {
+            ...i,
+            status: 'paid',
+            paidDate: paymentDate,
+            paymentMethod: method,
+            paymentReference: newPayment.referenceNumber
+          };
+        }
+        return i;
+      });
+
+      state.paymentModalInvoice = null;
+      state.isSelectInvoiceModalOpen = false;
+      showToast(`Payment of ₹${Number(amount).toLocaleString('en-IN')} reconciled. Invoice marked as Paid.`);
+      render();
+    }
+
+    function showToast(msg) {
+      state.toastMessage = msg;
+      setTimeout(() => {
+        state.toastMessage = null;
+        render();
+      }, 4500);
     }
 
     function render() {
@@ -428,17 +673,27 @@
 
             <main class="flex-1 overflow-y-auto p-6 bg-slate-950">
               <div class="max-w-6xl mx-auto space-y-6">
+                ${state.toastMessage ? `
+                  <div class="p-3.5 rounded-xl border bg-emerald-500/10 border-emerald-500/30 text-emerald-300 flex items-center gap-2 text-xs font-medium">
+                    <span>✓</span>
+                    <span>${state.toastMessage}</span>
+                  </div>
+                ` : ''}
+
                 ${state.activeTab === 'dashboard' ? renderDashboard() : ''}
                 ${state.activeTab === 'products' ? renderProductsPage() : ''}
                 ${state.activeTab === 'subscriptions' ? renderSubscriptionsPage() : ''}
-                ${state.activeTab === 'invoices' ? '<div class="p-8 border border-slate-800 rounded-xl bg-slate-900 text-center font-mono text-xs text-slate-400">🧾 Invoices & Tax Engine</div>' : ''}
-                ${state.activeTab === 'payments' ? '<div class="p-8 border border-slate-800 rounded-xl bg-slate-900 text-center font-mono text-xs text-slate-400">💳 Payments Module</div>' : ''}
+                ${state.activeTab === 'invoices' ? renderInvoicesPage() : ''}
+                ${state.activeTab === 'payments' ? renderPaymentsPage() : ''}
               </div>
             </main>
           </div>
         </div>
 
         ${state.pipelineSubId ? renderPipelineModal() : ''}
+        ${state.selectedInvoiceId ? renderInvoiceDetailModal() : ''}
+        ${state.paymentModalInvoice ? renderPaymentModal() : ''}
+        ${state.isSelectInvoiceModalOpen ? renderSelectInvoiceModal() : ''}
       `;
     }
 
@@ -674,7 +929,6 @@
               <button onclick="state.pipelineSubId = null; render();" class="text-slate-400 hover:text-white text-xs">✕ Close</button>
             </div>
 
-            <!-- Stepper -->
             <div class="p-3 bg-slate-950 rounded-lg border border-slate-800 mb-4">
               <div class="text-[10px] font-mono uppercase text-slate-500 mb-2 font-semibold">Workflow Progression</div>
               <div class="flex items-center justify-between">
@@ -689,7 +943,6 @@
               </div>
             </div>
 
-            <!-- Actions -->
             <div class="space-y-2 mb-4">
               <div class="text-xs font-mono uppercase text-slate-400 font-semibold mb-1">Permitted State Transitions</div>
               ${allowed.map(target => `
@@ -707,6 +960,572 @@
                 Dismiss
               </button>
             </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderInvoicesPage() {
+      const canManage = ['admin', 'staff'].includes(state.role);
+
+      const totalInvoiced = INVOICES_DATA.reduce((acc, c) => acc + (Number(c.totalAmount) || 0), 0);
+      const paidInvoices = INVOICES_DATA.filter(i => i.status === 'paid');
+      const totalCollected = paidInvoices.reduce((acc, c) => acc + (Number(c.totalAmount) || 0), 0);
+      const outstandingInvoices = INVOICES_DATA.filter(i => i.status === 'confirmed');
+      const totalOutstanding = outstandingInvoices.reduce((acc, c) => acc + (Number(c.totalAmount) || 0), 0);
+      const overdueInvoices = INVOICES_DATA.filter(i => i.status === 'confirmed' && i.dueDate && new Date(i.dueDate) < new Date());
+
+      const filtered = INVOICES_DATA.filter(inv => {
+        const isOverdue = inv.status === 'confirmed' && inv.dueDate && new Date(inv.dueDate) < new Date();
+        if (state.invoiceFilter === 'overdue' && !isOverdue) return false;
+        if (state.invoiceFilter !== 'all' && state.invoiceFilter !== 'overdue' && inv.status !== state.invoiceFilter) return false;
+
+        if (state.invoiceSearch.trim()) {
+          const q = state.invoiceSearch.toLowerCase();
+          const matchNum = inv.invoiceNumber?.toLowerCase().includes(q);
+          const matchCust = inv.customer?.toLowerCase().includes(q);
+          const matchSub = inv.subscriptionNumber?.toLowerCase().includes(q);
+          return matchNum || matchCust || matchSub;
+        }
+        return true;
+      });
+
+      return `
+        <div class="space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                🧾 Invoices & Billing Ledger
+              </h1>
+              <p class="text-xs text-slate-400 mt-1">
+                Reconcile recurring subscription invoices, manage GST tax compliance, and settle payments.
+              </p>
+            </div>
+
+            ${canManage ? `
+              <div class="flex items-center gap-2.5">
+                <button onclick="generateDueInvoices()" class="px-3.5 py-2 text-xs font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all">
+                  <span>⚡</span>
+                  <span>Generate Due Invoices</span>
+                </button>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Telemetry Stats -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+              <div class="text-xs font-mono uppercase text-slate-400 font-semibold">Total Invoiced</div>
+              <div class="text-2xl font-bold font-mono text-white mt-1.5">₹${Math.round(totalInvoiced).toLocaleString('en-IN')}</div>
+              <div class="text-xs text-slate-400 mt-1">${INVOICES_DATA.length} billable records</div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+              <div class="text-xs font-mono uppercase text-slate-400 font-semibold">Collected Revenue</div>
+              <div class="text-2xl font-bold font-mono text-emerald-400 mt-1.5">₹${Math.round(totalCollected).toLocaleString('en-IN')}</div>
+              <div class="text-xs text-emerald-400 mt-1">${paidInvoices.length} settled in full</div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+              <div class="text-xs font-mono uppercase text-slate-400 font-semibold">Outstanding Balance</div>
+              <div class="text-2xl font-bold font-mono text-amber-400 mt-1.5">₹${Math.round(totalOutstanding).toLocaleString('en-IN')}</div>
+              <div class="text-xs text-amber-400 mt-1">${outstandingInvoices.length} invoices due</div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+              <div class="text-xs font-mono uppercase text-slate-400 font-semibold">Overdue Invoices</div>
+              <div class="text-2xl font-bold font-mono ${overdueInvoices.length > 0 ? 'text-rose-400' : 'text-slate-400'} mt-1.5">${overdueInvoices.length}</div>
+              <div class="text-xs text-slate-400 mt-1">${overdueInvoices.length > 0 ? 'Requires remittance follow-up' : 'All accounts in good standing'}</div>
+            </div>
+          </div>
+
+          <!-- Filter & Search Bar -->
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 bg-slate-900/80 border border-slate-800 rounded-xl">
+            <div class="flex items-center gap-1.5 overflow-x-auto">
+              ${[
+                { id: 'all', label: 'All Invoices' },
+                { id: 'draft', label: 'Draft' },
+                { id: 'confirmed', label: 'Confirmed / Due' },
+                { id: 'paid', label: 'Paid' },
+                { id: 'overdue', label: 'Overdue' }
+              ].map(tab => `
+                <button onclick="state.invoiceFilter = '${tab.id}'; render();" class="px-3 py-1.5 text-xs font-mono rounded-lg transition-all whitespace-nowrap ${state.invoiceFilter === tab.id ? 'bg-indigo-600 text-white font-medium shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800'}">
+                  ${tab.label}
+                </button>
+              `).join('')}
+            </div>
+
+            <div class="w-full sm:w-72">
+              <input type="text" placeholder="Search invoice #, customer..." value="${state.invoiceSearch}" oninput="state.invoiceSearch = this.value; render();" class="w-full px-3 py-1.5 text-xs bg-slate-950 border border-slate-800 rounded-lg text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+            </div>
+          </div>
+
+          <!-- Table View -->
+          <div class="border border-slate-800 rounded-xl bg-slate-900 overflow-hidden shadow-sm">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-950/70 border-b border-slate-800 text-slate-400 font-mono uppercase text-[11px] tracking-wider">
+                <tr>
+                  <th class="py-3 px-4">Invoice #</th>
+                  <th class="py-3 px-4">Customer</th>
+                  <th class="py-3 px-4">Subscription</th>
+                  <th class="py-3 px-4">Issue / Due Date</th>
+                  <th class="py-3 px-4 text-right">Amount (₹)</th>
+                  <th class="py-3 px-4 text-center">Status</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800">
+                ${filtered.length === 0 ? `
+                  <tr>
+                    <td colSpan="7" class="py-10 text-center text-slate-500 font-mono">
+                      No invoices match the current filter criteria.
+                    </td>
+                  </tr>
+                ` : filtered.map(inv => {
+                  const isOverdue = inv.status === 'confirmed' && inv.dueDate && new Date(inv.dueDate) < new Date();
+                  const displayStatus = isOverdue ? 'overdue' : inv.status;
+                  const statusColors = {
+                    draft: 'bg-slate-800 text-slate-400 border-slate-700',
+                    confirmed: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
+                    paid: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+                    overdue: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
+                  };
+
+                  return `
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                      <td class="py-3.5 px-4 font-mono font-bold text-slate-200">
+                        <span class="hover:text-indigo-400 cursor-pointer" onclick="state.selectedInvoiceId = '${inv.id}'; render();">${inv.invoiceNumber}</span>
+                      </td>
+
+                      <td class="py-3.5 px-4">
+                        <div class="font-semibold text-slate-200">${inv.customer}</div>
+                        <div class="font-mono text-[11px] text-slate-500">${inv.customerEmail}</div>
+                      </td>
+
+                      <td class="py-3.5 px-4 font-mono text-[11px] text-slate-400">
+                        ${inv.subscriptionNumber || '—'}
+                      </td>
+
+                      <td class="py-3.5 px-4 font-mono text-[11px]">
+                        <div class="text-slate-300">${inv.invoiceDate}</div>
+                        <div class="${isOverdue ? 'text-rose-400 font-semibold' : 'text-slate-500'}">Due: ${inv.dueDate}</div>
+                      </td>
+
+                      <td class="py-3.5 px-4 text-right font-mono">
+                        <div class="text-white font-bold">₹${Number(inv.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                        <div class="text-[10px] text-slate-500">incl. ₹${Number(inv.taxAmount).toLocaleString('en-IN')} GST</div>
+                      </td>
+
+                      <td class="py-3.5 px-4 text-center">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase font-semibold border ${statusColors[displayStatus]}">
+                          ${displayStatus}
+                        </span>
+                      </td>
+
+                      <td class="py-3.5 px-4 text-right">
+                        <div class="flex items-center justify-end gap-1.5">
+                          <button onclick="state.selectedInvoiceId = '${inv.id}'; render();" class="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg text-xs" title="View Full Invoice">
+                            👁
+                          </button>
+                          ${canManage && inv.status === 'draft' ? `
+                            <button onclick="confirmInvoice('${inv.id}')" class="px-2 py-1 text-[11px] font-mono text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-lg">
+                              Confirm
+                            </button>
+                          ` : ''}
+                          ${canManage && inv.status !== 'paid' ? `
+                            <button onclick="state.paymentModalInvoice = INVOICES_DATA.find(i => i.id === '${inv.id}'); render();" class="px-2.5 py-1 text-[11px] font-mono font-medium text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-lg">
+                              💳 Pay
+                            </button>
+                          ` : ''}
+                        </div>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderInvoiceDetailModal() {
+      const inv = INVOICES_DATA.find(i => i.id === state.selectedInvoiceId);
+      if (!inv) return '';
+
+      const isDraft = inv.status === 'draft';
+      const isPaid = inv.status === 'paid';
+      const isOverdue = inv.status === 'confirmed' && inv.dueDate && new Date(inv.dueDate) < new Date();
+
+      return `
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="state.selectedInvoiceId = null; render();"></div>
+          <div class="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-6 z-10 text-slate-100 max-h-[90vh] overflow-y-auto space-y-5">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-mono text-base font-bold text-indigo-400">${inv.invoiceNumber}</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase font-semibold border ${isPaid ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : (isOverdue ? 'bg-rose-500/10 text-rose-400 border-rose-500/30' : 'bg-slate-800 text-slate-300 border-slate-700')}">
+                    ${isPaid ? 'PAID' : (isOverdue ? 'OVERDUE' : inv.status)}
+                  </span>
+                </div>
+                <p class="text-xs text-slate-400 mt-0.5">Billing Entity: Brightloop Software Solutions • Issued: ${inv.invoiceDate}</p>
+              </div>
+              <button onclick="state.selectedInvoiceId = null; render();" class="text-slate-400 hover:text-white text-xs">✕ Close</button>
+            </div>
+
+            <!-- Bill-to Box -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div class="p-3 bg-slate-950 rounded-lg border border-slate-800">
+                <span class="text-[10px] font-mono uppercase text-slate-500 font-semibold block mb-1">Billed To (Subscriber)</span>
+                <div class="font-semibold text-white">${inv.customer}</div>
+                <div class="font-mono text-slate-400">${inv.customerEmail}</div>
+                <div class="text-slate-400 mt-1">${inv.billingAddress || 'Corporate Office'}</div>
+              </div>
+              <div class="p-3 bg-slate-950 rounded-lg border border-slate-800">
+                <span class="text-[10px] font-mono uppercase text-slate-500 font-semibold block mb-1">Payment Schedule</span>
+                <div class="flex justify-between py-0.5"><span class="text-slate-400">Issue Date:</span><span class="font-mono text-slate-200">${inv.invoiceDate}</span></div>
+                <div class="flex justify-between py-0.5"><span class="text-slate-400">Payment Due:</span><span class="font-mono ${isOverdue ? 'text-rose-400 font-bold' : 'text-slate-200'}">${inv.dueDate}</span></div>
+                <div class="flex justify-between py-0.5"><span class="text-slate-400">Contract Ref:</span><span class="font-mono text-indigo-400">${inv.subscriptionNumber || 'Direct'}</span></div>
+              </div>
+            </div>
+
+            <!-- Line Items Table -->
+            <div class="border border-slate-800 rounded-lg overflow-hidden bg-slate-950">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-900 border-b border-slate-800 text-slate-400 font-mono uppercase text-[10px]">
+                  <tr>
+                    <th class="py-2 px-3">Item Description</th>
+                    <th class="py-2 px-3 text-center">Qty</th>
+                    <th class="py-2 px-3 text-right">Unit Price</th>
+                    <th class="py-2 px-3 text-right">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                  ${inv.lineItems?.map(item => `
+                    <tr>
+                      <td class="py-2.5 px-3 text-slate-200 font-medium">${item.description}</td>
+                      <td class="py-2.5 px-3 text-center font-mono text-slate-400">${item.quantity}</td>
+                      <td class="py-2.5 px-3 text-right font-mono text-slate-300">₹${Number(item.unitPrice).toLocaleString('en-IN')}</td>
+                      <td class="py-2.5 px-3 text-right font-mono font-bold text-white">₹${Number(item.subtotal).toLocaleString('en-IN')}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Tax & Discount Ledger -->
+            <div class="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1.5 text-xs font-mono">
+              <div class="flex justify-between text-slate-400">
+                <span>Subtotal (Line Items)</span>
+                <span class="text-slate-200 font-semibold">₹${Number(inv.subtotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+              </div>
+              ${inv.discountAmount > 0 ? `
+                <div class="flex justify-between text-emerald-400">
+                  <span>Applied Promotional Discount (${inv.discountValue}%)</span>
+                  <span>-₹${Number(inv.discountAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                </div>
+              ` : ''}
+              <div class="flex justify-between text-slate-400 border-t border-slate-800/80 pt-1">
+                <span>Net Taxable Base</span>
+                <span class="text-slate-200">₹${Number(inv.taxableAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div class="flex justify-between text-slate-400">
+                <span>GST (CGST 9% + SGST 9%) [18%]</span>
+                <span class="text-slate-200">+₹${Number(inv.taxAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div class="flex justify-between text-white font-bold text-sm border-t border-slate-800 pt-2">
+                <span>Total Payable</span>
+                <span class="text-emerald-400">₹${Number(inv.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+
+            ${isPaid ? `
+              <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs font-mono flex items-center justify-between text-emerald-300">
+                <span>✓ Remittance settled on ${inv.paidDate} via ${inv.paymentMethod}</span>
+                <span class="font-bold">Ref: ${inv.paymentReference}</span>
+              </div>
+            ` : ''}
+
+            <!-- Bottom Actions -->
+            <div class="flex items-center justify-between pt-3 border-t border-slate-800">
+              <button onclick="window.print()" class="px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-mono text-slate-300 hover:text-white hover:bg-slate-800">
+                🖨 Print / PDF Stub
+              </button>
+
+              <div class="flex items-center gap-2">
+                ${isDraft ? `
+                  <button onclick="confirmInvoice('${inv.id}'); state.selectedInvoiceId = null; render();" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white">
+                    Confirm Invoice
+                  </button>
+                ` : ''}
+                ${!isPaid ? `
+                  <button onclick="state.paymentModalInvoice = inv; state.selectedInvoiceId = null; render();" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white">
+                    Record Payment
+                  </button>
+                ` : ''}
+                <button onclick="state.selectedInvoiceId = null; render();" class="px-3 py-1.5 rounded-lg border border-slate-800 text-xs text-slate-400 hover:text-white">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderPaymentModal() {
+      const inv = state.paymentModalInvoice;
+      if (!inv) return '';
+
+      return `
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="state.paymentModalInvoice = null; render();"></div>
+          <div class="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-6 z-10 text-slate-100 space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div>
+                <h3 class="text-base font-bold text-white">Record Remittance</h3>
+                <p class="text-xs text-slate-400 font-mono mt-0.5">${inv.invoiceNumber} • ${inv.customer}</p>
+              </div>
+              <button onclick="state.paymentModalInvoice = null; render();" class="text-slate-400 hover:text-white text-xs">✕ Close</button>
+            </div>
+
+            <div class="p-3 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
+              <span class="text-slate-400">Invoice Balance Due:</span>
+              <span class="font-mono text-base font-bold text-emerald-400">₹${Number(inv.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+            </div>
+
+            <form onsubmit="event.preventDefault(); recordPaymentDirect('${inv.id}', document.getElementById('pmAmount').value, document.getElementById('pmMethod').value, document.getElementById('pmRef').value);" class="space-y-3 text-xs">
+              <div>
+                <label class="block font-medium text-slate-300 mb-1">Reconciliation Channel</label>
+                <select id="pmMethod" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                  <option value="Bank Wire Transfer">Bank Wire Transfer (NEFT/RTGS/IMPS)</option>
+                  <option value="UPI Auto-Debit">UPI Mandate / Auto-Debit</option>
+                  <option value="Credit / Debit Card">Credit / Debit Card Gateway</option>
+                  <option value="Cheque / Demand Draft">Cheque / Demand Draft</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block font-medium text-slate-300 mb-1">Amount Reconciled (₹)</label>
+                <input id="pmAmount" type="number" step="0.01" value="${inv.totalAmount}" required class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+              </div>
+
+              <div>
+                <label class="block font-medium text-slate-300 mb-1">UTR / Electronic Reference Number</label>
+                <input id="pmRef" type="text" value="UTR-${Date.now().toString().slice(-6)}" required class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+              </div>
+
+              <div class="pt-3 border-t border-slate-800 flex justify-end gap-2">
+                <button type="button" onclick="state.paymentModalInvoice = null; render();" class="px-3 py-1.5 rounded-lg border border-slate-800 text-xs text-slate-400 hover:text-white">
+                  Cancel
+                </button>
+                <button type="submit" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-sm">
+                  Confirm Settlement
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSelectInvoiceModal() {
+      const unpaidInvoices = INVOICES_DATA.filter(i => i.status !== 'paid');
+
+      return `
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="state.isSelectInvoiceModalOpen = false; render();"></div>
+          <div class="relative w-full max-w-xl bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-6 z-10 text-slate-100 space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div>
+                <h3 class="text-base font-bold text-white">Select Invoice for Remittance</h3>
+                <p class="text-xs text-slate-400 mt-0.5">Select an open or confirmed invoice to record payment settlement</p>
+              </div>
+              <button onclick="state.isSelectInvoiceModalOpen = false; render();" class="text-slate-400 hover:text-white text-xs">✕ Close</button>
+            </div>
+
+            <div class="max-h-72 overflow-y-auto divide-y divide-slate-800 border border-slate-800 rounded-lg bg-slate-950">
+              ${unpaidInvoices.length === 0 ? `
+                <div class="p-6 text-center text-xs text-slate-500 font-mono">
+                  All generated invoices have been settled in full.
+                </div>
+              ` : unpaidInvoices.map(inv => `
+                <div onclick="state.paymentModalInvoice = INVOICES_DATA.find(i => i.id === '${inv.id}'); state.isSelectInvoiceModalOpen = false; render();" class="p-3 hover:bg-slate-900 cursor-pointer flex items-center justify-between gap-3 text-xs transition-colors">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="font-mono font-bold text-indigo-400">${inv.invoiceNumber}</span>
+                      <span class="px-1.5 py-0.2 rounded text-[10px] font-mono uppercase bg-slate-800 text-slate-300 border border-slate-700">${inv.status}</span>
+                    </div>
+                    <div class="font-medium text-slate-200 mt-1">${inv.customer}</div>
+                    <div class="text-[11px] font-mono text-slate-500">Due: ${inv.dueDate}</div>
+                  </div>
+
+                  <div class="text-right">
+                    <div class="font-mono font-bold text-white">₹${Number(inv.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                    <span class="text-[11px] text-emerald-400 font-mono mt-1 inline-block">Record Remittance ➔</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+
+            <div class="flex justify-end pt-2">
+              <button onclick="state.isSelectInvoiceModalOpen = false; render();" class="px-3 py-1.5 rounded-lg border border-slate-800 text-xs text-slate-400 hover:text-white">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderPaymentsPage() {
+      const totalSettled = PAYMENTS_DATA.reduce((acc, c) => acc + (Number(c.amount) || 0), 0);
+      const wireSettled = PAYMENTS_DATA.filter(p => p.paymentMethod.toLowerCase().includes('wire') || p.paymentMethod.toLowerCase().includes('bank')).reduce((acc, c) => acc + (Number(c.amount) || 0), 0);
+      const upiSettled = PAYMENTS_DATA.filter(p => p.paymentMethod.toLowerCase().includes('upi')).reduce((acc, c) => acc + (Number(c.amount) || 0), 0);
+      const unpaidCount = INVOICES_DATA.filter(i => i.status !== 'paid').length;
+
+      const filtered = PAYMENTS_DATA.filter(p => {
+        if (state.paymentMethodFilter !== 'all' && p.paymentMethod !== state.paymentMethodFilter) return false;
+        if (state.paymentSearch.trim()) {
+          const q = state.paymentSearch.toLowerCase();
+          const matchNum = p.paymentNumber?.toLowerCase().includes(q);
+          const matchInv = p.invoiceNumber?.toLowerCase().includes(q);
+          const matchCust = p.customer?.toLowerCase().includes(q);
+          const matchRef = p.referenceNumber?.toLowerCase().includes(q);
+          return matchNum || matchInv || matchCust || matchRef;
+        }
+        return true;
+      });
+
+      return `
+        <div class="space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                💳 Payments & Collections Ledger
+              </h1>
+              <p class="text-xs text-slate-400 mt-1">
+                Track bank wires, UPI mandates, and card settlements with electronic UTR reconciliation.
+              </p>
+            </div>
+
+            <button onclick="state.isSelectInvoiceModalOpen = true; render();" class="px-3.5 py-2 text-xs font-medium rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm flex items-center gap-1.5 cursor-pointer active:scale-[0.98] transition-all">
+              <span>+</span>
+              <span>Record Manual Payment</span>
+            </button>
+          </div>
+
+          <!-- Telemetry Stats -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+              <div class="text-xs font-mono uppercase text-slate-400 font-semibold">Total Settled</div>
+              <div class="text-2xl font-bold font-mono text-emerald-400 mt-1.5">₹${Math.round(totalSettled).toLocaleString('en-IN')}</div>
+              <div class="text-xs text-emerald-400 mt-1">${PAYMENTS_DATA.length} verified transactions</div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+              <div class="text-xs font-mono uppercase text-slate-400 font-semibold">Bank Wire Transfers</div>
+              <div class="text-2xl font-bold font-mono text-white mt-1.5">₹${Math.round(wireSettled).toLocaleString('en-IN')}</div>
+              <div class="text-xs text-slate-400 mt-1">NEFT / RTGS Corporate</div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+              <div class="text-xs font-mono uppercase text-slate-400 font-semibold">UPI & Digital Mandates</div>
+              <div class="text-2xl font-bold font-mono text-indigo-400 mt-1.5">₹${Math.round(upiSettled).toLocaleString('en-IN')}</div>
+              <div class="text-xs text-indigo-400 mt-1">Auto-Debit mandates</div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+              <div class="text-xs font-mono uppercase text-slate-400 font-semibold">Pending Invoices</div>
+              <div class="text-2xl font-bold font-mono ${unpaidCount > 0 ? 'text-amber-400' : 'text-slate-400'} mt-1.5">${unpaidCount}</div>
+              <div class="text-xs text-slate-400 mt-1">${unpaidCount > 0 ? 'Awaiting remittance' : 'All invoices settled'}</div>
+            </div>
+          </div>
+
+          <!-- Filter & Search Bar -->
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 bg-slate-900/80 border border-slate-800 rounded-xl">
+            <div class="flex items-center gap-1.5 overflow-x-auto">
+              ${[
+                { id: 'all', label: 'All Channels' },
+                { id: 'Bank Wire Transfer', label: 'Bank Wire' },
+                { id: 'UPI Auto-Debit', label: 'UPI Auto-Debit' },
+                { id: 'Credit / Debit Card', label: 'Cards' }
+              ].map(tab => `
+                <button onclick="state.paymentMethodFilter = '${tab.id}'; render();" class="px-3 py-1.5 text-xs font-mono rounded-lg transition-all whitespace-nowrap ${state.paymentMethodFilter === tab.id ? 'bg-indigo-600 text-white font-medium shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800'}">
+                  ${tab.label}
+                </button>
+              `).join('')}
+            </div>
+
+            <div class="w-full sm:w-72">
+              <input type="text" placeholder="Search payment #, UTR, invoice..." value="${state.paymentSearch}" oninput="state.paymentSearch = this.value; render();" class="w-full px-3 py-1.5 text-xs bg-slate-950 border border-slate-800 rounded-lg text-slate-100 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+            </div>
+          </div>
+
+          <!-- Payments Table -->
+          <div class="border border-slate-800 rounded-xl bg-slate-900 overflow-hidden shadow-sm">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-950/70 border-b border-slate-800 text-slate-400 font-mono uppercase text-[11px] tracking-wider">
+                <tr>
+                  <th class="py-3 px-4">Payment #</th>
+                  <th class="py-3 px-4">Invoice Ref</th>
+                  <th class="py-3 px-4">Customer</th>
+                  <th class="py-3 px-4">Method</th>
+                  <th class="py-3 px-4">Settlement Date</th>
+                  <th class="py-3 px-4">UTR / External Ref</th>
+                  <th class="py-3 px-4 text-right">Settled Amount (₹)</th>
+                  <th class="py-3 px-4 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800">
+                ${filtered.length === 0 ? `
+                  <tr>
+                    <td colSpan="8" class="py-10 text-center text-slate-500 font-mono">
+                      No payment records match the current filter.
+                    </td>
+                  </tr>
+                ` : filtered.map(p => `
+                  <tr class="hover:bg-slate-800/40 transition-colors">
+                    <td class="py-3.5 px-4 font-mono font-bold text-slate-200">
+                      <span class="text-emerald-400 mr-1.5">✓</span>${p.paymentNumber}
+                    </td>
+
+                    <td class="py-3.5 px-4 font-mono text-indigo-400">
+                      ${p.invoiceNumber}
+                    </td>
+
+                    <td class="py-3.5 px-4 font-semibold text-slate-200">
+                      ${p.customer}
+                    </td>
+
+                    <td class="py-3.5 px-4">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
+                        ${p.paymentMethod}
+                      </span>
+                    </td>
+
+                    <td class="py-3.5 px-4 font-mono text-slate-400">
+                      ${p.paymentDate}
+                    </td>
+
+                    <td class="py-3.5 px-4 font-mono text-slate-300">
+                      <span class="px-1.5 py-0.5 bg-slate-950 border border-slate-800 rounded text-[11px]">${p.referenceNumber}</span>
+                    </td>
+
+                    <td class="py-3.5 px-4 text-right font-mono font-bold text-emerald-400">
+                      ₹${Number(p.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </td>
+
+                    <td class="py-3.5 px-4 text-center">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        SETTLED
+                      </span>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
           </div>
         </div>
       `;
