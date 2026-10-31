@@ -1,14 +1,37 @@
-"""SQLAlchemy models package for Subscription Management System."""
+"""Import all ORM models so their tables register with shared metadata."""
 
-from app.models.plan import Plan
-from app.models.product import Product, ProductVariant
-from app.models.tax import Tax
-from app.models.user import User
+from .models import (
+    BillingCycle,
+    DiscountRule,
+    DiscountType,
+    Invoice,
+    InvoiceStatus,
+    Payment,
+    Plan,
+    Product,
+    ProductVariant,
+    Subscription,
+    SubscriptionLine,
+    SubscriptionStatus,
+    TaxRule,
+    User,
+    UserRole,
+)
 
 __all__ = [
-    "User",
+    "BillingCycle",
+    "DiscountRule",
+    "DiscountType",
+    "Invoice",
+    "InvoiceStatus",
+    "Payment",
+    "Plan",
     "Product",
     "ProductVariant",
-    "Plan",
-    "Tax",
+    "Subscription",
+    "SubscriptionLine",
+    "SubscriptionStatus",
+    "TaxRule",
+    "User",
+    "UserRole",
 ]
