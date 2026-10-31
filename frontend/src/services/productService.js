@@ -1,51 +1,8 @@
 import api from './api';
+import { MOCK_PRODUCTS, MOCK_PLANS, getStoredItem, setStoredItem } from './mockData';
 
-// Enterprise Product Catalog Seed
-const INITIAL_PRODUCTS = [
-  {
-    id: 'prod_01',
-    name: 'Enterprise Cloud Core',
-    type: 'SaaS Subscription',
-    salesPrice: 32000,
-    costPrice: 16500,
-    notes: 'Multi-tenant high availability infrastructure with 99.99% uptime guarantee and automatic backups.',
-    variants: [
-      { id: 'var_std_01', name: 'Standard Edition', code: 'STD', additionalPrice: 0 },
-      { id: 'var_odoo_01', name: 'Odoo Enterprise Connector Sync', code: 'ODOO-560', additionalPrice: 560 },
-      { id: 'var_vps_01', name: 'Dedicated High-Compute Cluster', code: 'VPS-4200', additionalPrice: 4200 },
-      { id: 'var_sla_01', name: '24/7 Dedicated Ops SLA', code: 'SLA-2500', additionalPrice: 2500 },
-    ],
-  },
-  {
-    id: 'prod_02',
-    name: 'Revenue Intelligence Platform',
-    type: 'Service & Analytics',
-    salesPrice: 14000,
-    costPrice: 6200,
-    notes: 'Cohort retention analysis, churn predictor engine, and automated MRR ledger calculations.',
-    variants: [
-      { id: 'var_std_02', name: 'Standard Dashboard', code: 'STD', additionalPrice: 0 },
-      { id: 'var_odoo_02', name: 'Odoo Invoicing Webhook Integration', code: 'ODOO-560', additionalPrice: 560 },
-      { id: 'var_dw_02', name: 'Direct Snowflake Streamer', code: 'DW-1800', additionalPrice: 1800 },
-    ],
-  },
-  {
-    id: 'prod_03',
-    name: 'API Gateway & Event Dispatcher',
-    type: 'API Provisioning',
-    salesPrice: 8000,
-    costPrice: 3100,
-    notes: 'Distributed webhooks, rate-limiting rules, token authorization, and payload signing.',
-    variants: [
-      { id: 'var_std_03', name: 'Standard Gateway Pipeline', code: 'STD', additionalPrice: 0 },
-      { id: 'var_odoo_03', name: 'Odoo REST / XML-RPC Bridge', code: 'ODOO-560', additionalPrice: 560 },
-      { id: 'var_burst_03', name: 'Unlimited Burst Throughput', code: 'BURST-3000', additionalPrice: 3000 },
-    ],
-  },
-];
-
-// Billing Plans Seed (Daily, Weekly, Monthly, Yearly)
-const INITIAL_PLANS = [
+const INITIAL_PRODUCTS = MOCK_PRODUCTS;
+const INITIAL_PLANS = MOCK_PLANS;
   {
     id: 'plan_01',
     productId: 'prod_01',

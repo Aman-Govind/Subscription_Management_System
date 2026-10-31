@@ -7,6 +7,7 @@ import Input from '../components/common/Input';
 import Badge from '../components/common/Badge';
 import Modal from '../components/common/Modal';
 import PaymentModal from '../components/invoices/PaymentModal';
+import { useToast } from '../components/common/Toast';
 import {
   CreditCard,
   CheckCircle2,
@@ -23,6 +24,7 @@ import {
 } from 'lucide-react';
 
 export const Payments = () => {
+  const toast = useToast();
   const { user } = useAuth();
   const [payments, setPayments] = useState([]);
   const [invoices, setInvoices] = useState([]);
@@ -66,6 +68,7 @@ export const Payments = () => {
       await loadData();
       setIsPaymentModalOpen(false);
       setSelectedInvoiceForPayment(null);
+      toast.success('Payment verified and settled in ledger.');
       setNotification({
         type: 'success',
         message: 'Payment verified and settled in ledger.',

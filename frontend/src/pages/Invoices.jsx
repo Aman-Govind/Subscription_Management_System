@@ -7,6 +7,7 @@ import PaymentModal from '../components/invoices/PaymentModal';
 import Button from '../components/common/Button';
 import StatCard from '../components/common/StatCard';
 import Input from '../components/common/Input';
+import { useToast } from '../components/common/Toast';
 import {
   FileText,
   CreditCard,
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 
 export const Invoices = () => {
+  const toast = useToast();
   const { user } = useAuth();
   const [invoices, setInvoices] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,12 +61,13 @@ export const Invoices = () => {
     try {
       const res = await billingService.generateDueInvoices();
       await loadInvoices();
+      const msg = res.generatedCount > 0
+        ? `Generated ${res.generatedCount} recurring invoice(s) from due active subscriptions.`
+        : 'All active subscriptions are currently up to date; no recurring invoices were due.';
+      toast.success(msg);
       setNotification({
         type: 'success',
-        message:
-          res.generatedCount > 0
-            ? `Generated ${res.generatedCount} recurring invoice(s) from due active subscriptions.`
-            : 'All active subscriptions are currently up to date; no recurring invoices were due.',
+        message: msg,
       });
       setTimeout(() => setNotification(null), 5000);
     } catch (err) {
@@ -84,6 +87,7 @@ export const Invoices = () => {
       if (activeInvoice && activeInvoice.id === invoiceId) {
         setActiveInvoice((prev) => ({ ...prev, status: 'confirmed' }));
       }
+      toast.success('Invoice confirmed and published for payment settlement.');
       setNotification({
         type: 'success',
         message: 'Invoice confirmed and issued to customer.',
@@ -100,6 +104,7 @@ export const Invoices = () => {
       await loadInvoices();
       setIsPaymentOpen(false);
       setIsDetailOpen(false);
+      toast.success('Payment reconciled successfully. Invoice balance settled.');
       setNotification({
         type: 'success',
         message: `Payment reconciled successfully. Invoice balance settled.`,

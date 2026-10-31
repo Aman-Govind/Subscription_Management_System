@@ -8,6 +8,7 @@ import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import Modal from '../components/common/Modal';
 import Badge from '../components/common/Badge';
+import { useToast } from '../components/common/Toast';
 import {
   Repeat,
   Plus,
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react';
 
 export const Subscriptions = () => {
+  const toast = useToast();
   const { user, role, isCustomer } = useAuth();
   const [subscriptions, setSubscriptions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,17 +92,19 @@ export const Subscriptions = () => {
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
     if (!newSubData.customer.trim() || newSubData.lineItems.length === 0) {
-      alert('Please provide a customer name and at least one service line item.');
+      toast.warning('Please provide a customer name and at least one service line item.');
       return;
     }
 
-    await subscriptionService.createSubscription(newSubData);
+    const created = await subscriptionService.createSubscription(newSubData);
+    toast.success(`Subscription ${created?.subscriptionNumber || 'contract'} registered successfully.`);
     setIsCreateModalOpen(false);
     await loadSubscriptions();
   };
 
   const handleTransitionStatus = async (subId, newStatus, note) => {
     await subscriptionService.transitionStatus(subId, newStatus, note);
+    toast.success(`Subscription status updated to ${newStatus.toUpperCase()}.`);
     await loadSubscriptions();
   };
 

@@ -5,6 +5,7 @@ import Input from '../components/common/Input';
 import Badge from '../components/common/Badge';
 import Modal from '../components/common/Modal';
 import Table from '../components/common/Table';
+import { useToast } from '../components/common/Toast';
 import {
   Package,
   Plus,
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 
 export const Products = () => {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('products'); // 'products' | 'plans'
   const [products, setProducts] = useState([]);
   const [plans, setPlans] = useState([]);
@@ -104,6 +106,7 @@ export const Products = () => {
     };
 
     await productService.createProduct(payload);
+    toast.success(`Product "${payload.name}" cataloged successfully.`);
     setIsProductModalOpen(false);
     setNewProduct({
       name: '',
@@ -129,6 +132,7 @@ export const Products = () => {
       productName: selectedProd?.name || 'Custom Service',
       price: Number(newPlan.price) || 0,
     });
+    toast.success(`Billing plan "${newPlan.name}" created successfully.`);
 
     setIsPlanModalOpen(false);
     setNewPlan({
@@ -146,6 +150,7 @@ export const Products = () => {
     if (!selectedProductForVariant || !newVariant.name.trim()) return;
 
     await productService.addVariant(selectedProductForVariant.id, newVariant);
+    toast.success(`Variant "${newVariant.name}" (+₹${newVariant.additionalPrice}) attached.`);
     setIsVariantModalOpen(false);
     setSelectedProductForVariant(null);
     setNewVariant({

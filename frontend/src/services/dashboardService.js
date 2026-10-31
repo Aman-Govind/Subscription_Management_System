@@ -1,18 +1,5 @@
 import api from './api';
-
-const MOCK_METRICS = {
-  activeSubscriptions: 142,
-  activeChange: '+8.4%',
-  totalRevenueReceived: '4,44,200',
-  revenueChange: '+12.1%',
-  outstandingAmount: '38,400',
-  pendingInvoicesCount: 4,
-  overdueInvoices: 2,
-  overdueAmount: '12,800',
-  mrr: '4,82,600',
-  collectionRate: 92.0,
-  upcomingRenewalsCount: 18,
-};
+import { calculateLiveMetrics, MOCK_METRICS } from './mockData';
 
 const MOCK_RECENT_ACTIVITIES = [
   {
@@ -64,14 +51,14 @@ const MOCK_RECENT_ACTIVITIES = [
 
 export const dashboardService = {
   /**
-   * Fetch core operational telemetry
+   * Fetch core operational telemetry with live recalculations
    */
   async getMetrics() {
     try {
       const response = await api.get('/dashboard/metrics');
       return response.data;
     } catch {
-      return MOCK_METRICS;
+      return calculateLiveMetrics ? calculateLiveMetrics() : MOCK_METRICS;
     }
   },
 
@@ -89,4 +76,3 @@ export const dashboardService = {
 };
 
 export default dashboardService;
-

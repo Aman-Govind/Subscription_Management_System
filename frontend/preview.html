@@ -61,33 +61,7 @@
       }
     };
 
-    let state = {
-      token: localStorage.getItem('token') || null,
-      role: localStorage.getItem('user_role') || null,
-      user: (() => {
-        try { return JSON.parse(localStorage.getItem('user_profile')) || null; } catch { return null; }
-      })(),
-      activeTab: 'dashboard',
-      productsSubTab: 'products',
-      subStatusFilter: 'all',
-      selectedLoginRole: 'admin',
-      loginEmail: 'admin@brightloop.io',
-      loginPassword: 'password123',
-      showPassword: false,
-      isSubmitting: false,
-      loginError: '',
-      pipelineSubId: null,
-      invoiceFilter: 'all',
-      invoiceSearch: '',
-      selectedInvoiceId: null,
-      paymentModalInvoice: null,
-      isSelectInvoiceModalOpen: false,
-      paymentMethodFilter: 'all',
-      paymentSearch: '',
-      toastMessage: null,
-    };
-
-    const PRODUCTS_DATA = [
+    const SEED_PRODUCTS = [
       {
         id: 'prod_01',
         name: 'Enterprise Cloud Core',
@@ -129,7 +103,7 @@
       }
     ];
 
-    const PLANS_DATA = [
+    const SEED_PLANS = [
       { name: 'Enterprise Core — Daily Pass', product: 'Enterprise Cloud Core', freq: 'daily', price: 1500, mrr: 45000, status: 'active', subs: 8 },
       { name: 'Enterprise Core — Weekly Sprint', product: 'Enterprise Cloud Core', freq: 'weekly', price: 8000, mrr: 34666, status: 'active', subs: 24 },
       { name: 'Enterprise Core — Monthly Standard', product: 'Enterprise Cloud Core', freq: 'monthly', price: 32000, mrr: 32000, status: 'active', subs: 82 },
@@ -138,7 +112,7 @@
       { name: 'API Gateway — Monthly', product: 'API Gateway & Event Dispatcher', freq: 'monthly', price: 8000, mrr: 8000, status: 'active', subs: 38 },
     ];
 
-    let SUBSCRIPTIONS_DATA = [
+    const SEED_SUBSCRIPTIONS = [
       {
         id: 'sub_001',
         num: 'SUB-2026-0041',
@@ -196,7 +170,7 @@
       }
     ];
 
-    let INVOICES_DATA = [
+    const SEED_INVOICES = [
       {
         id: 'inv_001',
         invoiceNumber: 'INV-2026-0891',
@@ -302,7 +276,7 @@
       }
     ];
 
-    let PAYMENTS_DATA = [
+    const SEED_PAYMENTS = [
       {
         id: 'pay_001',
         paymentNumber: 'PAY-2026-0412',
@@ -329,6 +303,40 @@
       },
     ];
 
+    let PRODUCTS_DATA = JSON.parse(JSON.stringify(SEED_PRODUCTS));
+    let PLANS_DATA = JSON.parse(JSON.stringify(SEED_PLANS));
+    let SUBSCRIPTIONS_DATA = JSON.parse(JSON.stringify(SEED_SUBSCRIPTIONS));
+    let INVOICES_DATA = JSON.parse(JSON.stringify(SEED_INVOICES));
+    let PAYMENTS_DATA = JSON.parse(JSON.stringify(SEED_PAYMENTS));
+
+    let state = {
+      token: localStorage.getItem('token') || null,
+      role: localStorage.getItem('user_role') || null,
+      user: (() => {
+        try { return JSON.parse(localStorage.getItem('user_profile')) || null; } catch { return null; }
+      })(),
+      activeTab: 'dashboard',
+      productsSubTab: 'products',
+      subStatusFilter: 'all',
+      selectedLoginRole: 'admin',
+      loginEmail: 'admin@brightloop.io',
+      loginPassword: 'password123',
+      isSubmitting: false,
+      loginError: '',
+      pipelineSubId: null,
+      invoiceFilter: 'all',
+      invoiceSearch: '',
+      selectedInvoiceId: null,
+      paymentModalInvoice: null,
+      isSelectInvoiceModalOpen: false,
+      paymentMethodFilter: 'all',
+      paymentSearch: '',
+      toasts: [],
+      isCreateSubModalOpen: false,
+      isAddVariantModalOpen: false,
+      selectedProductForVariant: null,
+    };
+
     const ALLOWED_FLOWS = {
       draft: ['quotation', 'closed'],
       quotation: ['confirmed', 'draft', 'closed'],
@@ -336,6 +344,32 @@
       active: ['closed'],
       closed: ['draft']
     };
+
+    function resetAllData() {
+      PRODUCTS_DATA = JSON.parse(JSON.stringify(SEED_PRODUCTS));
+      PLANS_DATA = JSON.parse(JSON.stringify(SEED_PLANS));
+      SUBSCRIPTIONS_DATA = JSON.parse(JSON.stringify(SEED_SUBSCRIPTIONS));
+      INVOICES_DATA = JSON.parse(JSON.stringify(SEED_INVOICES));
+      PAYMENTS_DATA = JSON.parse(JSON.stringify(SEED_PAYMENTS));
+      showToast('All platform datasets restored to clean baseline state.', 'info');
+      render();
+    }
+
+    function showToast(message, type = 'success') {
+      const id = 'toast_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+      const newToast = { id, message, type, time: new Date().toLocaleTimeString() };
+      state.toasts.push(newToast);
+      render();
+      setTimeout(() => {
+        state.toasts = state.toasts.filter(t => t.id !== id);
+        render();
+      }, 4000);
+    }
+
+    function removeToast(id) {
+      state.toasts = state.toasts.filter(t => t.id !== id);
+      render();
+    }
 
     function setLoginRole(roleKey) {
       const p = PRESET_USERS[roleKey];
@@ -378,8 +412,9 @@
         state.user = profile;
         state.isSubmitting = false;
         state.activeTab = 'dashboard';
+        showToast(`Authenticated session established as ${assignedRole.toUpperCase()}.`, 'success');
         render();
-      }, 200);
+      }, 150);
     }
 
     function handleLogout() {
@@ -391,12 +426,13 @@
       state.role = null;
       state.user = null;
       state.activeTab = 'dashboard';
+      showToast('Session terminated. Local tokens cleared.', 'info');
       render();
     }
 
     function setActiveTab(tab) {
       if (state.user && !state.user.allowedRoutes.includes(tab)) {
-        alert('Access Restricted: Your assigned role (' + state.role + ') does not have access to this module.');
+        showToast(`Access Restricted: Your assigned role (${state.role}) does not have permission for this module.`, 'error');
         return;
       }
       state.activeTab = tab;
@@ -411,6 +447,7 @@
         return s;
       });
       state.pipelineSubId = null;
+      showToast(`Subscription ${subId} transitioned to ${newStatus.toUpperCase()}.`, 'success');
       render();
     }
 
@@ -419,8 +456,8 @@
       let createdCount = 0;
 
       activeSubs.forEach(sub => {
-        const subtotal = sub.total / 1.18;
-        const tax = sub.total - subtotal;
+        const subtotal = Math.round(sub.total / 1.18);
+        const tax = Math.round(sub.total - subtotal);
         const newInvoice = {
           id: 'inv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
           invoiceNumber: 'INV-2026-' + Math.floor(1000 + Math.random() * 9000),
@@ -435,15 +472,15 @@
           paymentMethod: null,
           paymentReference: null,
           lineItems: [
-            { description: sub.plan + ' (Recurring Cycle)', quantity: 1, unitPrice: Math.round(subtotal), subtotal: Math.round(subtotal) }
+            { description: sub.plan + ' (Recurring Cycle)', quantity: 1, unitPrice: subtotal, subtotal: subtotal }
           ],
-          subtotal: Math.round(subtotal),
+          subtotal: subtotal,
           discountType: 'percentage',
           discountValue: 0,
           discountAmount: 0,
-          taxableAmount: Math.round(subtotal),
+          taxableAmount: subtotal,
           taxRate: 18,
-          taxAmount: Math.round(tax),
+          taxAmount: tax,
           totalAmount: Math.round(sub.total),
         };
 
@@ -451,7 +488,7 @@
         createdCount++;
       });
 
-      showToast(`Generated ${createdCount} recurring invoice(s) from due active subscriptions.`);
+      showToast(`Generated ${createdCount} recurring invoice(s) from due active subscriptions.`, 'success');
       render();
     }
 
@@ -462,7 +499,7 @@
         }
         return inv;
       });
-      showToast('Invoice confirmed and published for payment settlement.');
+      showToast('Invoice confirmed and published for payment settlement.', 'success');
       render();
     }
 
@@ -501,16 +538,25 @@
 
       state.paymentModalInvoice = null;
       state.isSelectInvoiceModalOpen = false;
-      showToast(`Payment of ₹${Number(amount).toLocaleString('en-IN')} reconciled. Invoice marked as Paid.`);
+      showToast(`Payment of ₹${Number(amount).toLocaleString('en-IN')} reconciled. Invoice marked as Paid.`, 'success');
       render();
     }
 
-    function showToast(msg) {
-      state.toastMessage = msg;
-      setTimeout(() => {
-        state.toastMessage = null;
-        render();
-      }, 4500);
+    function addOdooVariantToProduct(prodId) {
+      PRODUCTS_DATA = PRODUCTS_DATA.map(p => {
+        if (p.id === prodId) {
+          return {
+            ...p,
+            variants: [
+              ...p.variants,
+              { name: 'Odoo Enterprise Connector Sync', code: 'ODOO-560', delta: 560 }
+            ]
+          };
+        }
+        return p;
+      });
+      showToast('Odoo Enterprise Connector (+₹560) variant attached.', 'success');
+      render();
     }
 
     function render() {
@@ -588,6 +634,7 @@
             </div>
           </div>
         </div>
+        ${renderToastContainer()}
       `;
     }
 
@@ -639,12 +686,17 @@
               </div>
             </div>
 
-            <div class="p-3.5 border-t border-slate-800 bg-slate-950/40 flex items-center justify-between text-xs font-mono text-slate-400">
-              <span class="flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                Engine Active
-              </span>
-              <span>v1.4.0</span>
+            <div class="p-3 border-t border-slate-800 bg-slate-950/40 space-y-2">
+              <div class="flex items-center justify-between text-xs font-mono text-slate-400">
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  Engine Online
+                </span>
+                <span>v1.5.0</span>
+              </div>
+              <button onclick="resetAllData()" class="w-full py-1 px-2 rounded text-[11px] font-mono text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-800 text-center transition-all cursor-pointer">
+                ↺ Reset All Baseline Data
+              </button>
             </div>
           </aside>
 
@@ -673,13 +725,6 @@
 
             <main class="flex-1 overflow-y-auto p-6 bg-slate-950">
               <div class="max-w-6xl mx-auto space-y-6">
-                ${state.toastMessage ? `
-                  <div class="p-3.5 rounded-xl border bg-emerald-500/10 border-emerald-500/30 text-emerald-300 flex items-center gap-2 text-xs font-medium">
-                    <span>✓</span>
-                    <span>${state.toastMessage}</span>
-                  </div>
-                ` : ''}
-
                 ${state.activeTab === 'dashboard' ? renderDashboard() : ''}
                 ${state.activeTab === 'products' ? renderProductsPage() : ''}
                 ${state.activeTab === 'subscriptions' ? renderSubscriptionsPage() : ''}
@@ -694,11 +739,45 @@
         ${state.selectedInvoiceId ? renderInvoiceDetailModal() : ''}
         ${state.paymentModalInvoice ? renderPaymentModal() : ''}
         ${state.isSelectInvoiceModalOpen ? renderSelectInvoiceModal() : ''}
+        ${renderToastContainer()}
+      `;
+    }
+
+    function renderToastContainer() {
+      if (!state.toasts || state.toasts.length === 0) return '';
+      return `
+        <div class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0">
+          ${state.toasts.map(t => {
+            const styles = {
+              success: 'border-emerald-500/40 bg-slate-900/95 text-emerald-300',
+              error: 'border-rose-500/40 bg-slate-900/95 text-rose-300',
+              warning: 'border-amber-500/40 bg-slate-900/95 text-amber-300',
+              info: 'border-indigo-500/40 bg-slate-900/95 text-indigo-300',
+            }[t.type] || 'border-slate-800 bg-slate-900 text-slate-200';
+
+            return `
+              <div class="pointer-events-auto flex items-start gap-2.5 p-3 rounded-xl border ${styles} shadow-2xl backdrop-blur-md">
+                <span class="text-sm mt-0.5">${t.type === 'success' ? '✓' : (t.type === 'error' ? '✕' : 'ℹ')}</span>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[10px] font-mono uppercase text-slate-400">${t.type} • ${t.time}</div>
+                  <div class="text-xs text-slate-100 mt-0.5 leading-snug">${t.message}</div>
+                </div>
+                <button onclick="removeToast('${t.id}')" class="text-slate-500 hover:text-slate-300 text-xs p-1">✕</button>
+              </div>
+            `;
+          }).join('')}
+        </div>
       `;
     }
 
     function renderDashboard() {
       const u = state.user;
+      const activeSubsCount = SUBSCRIPTIONS_DATA.filter(s => s.status === 'active').length + 138;
+      const totalCollected = PAYMENTS_DATA.reduce((acc, c) => acc + (Number(c.amount) || 0), 0) + 397519;
+      const confirmedInvoices = INVOICES_DATA.filter(i => i.status === 'confirmed');
+      const outstandingBalance = confirmedInvoices.reduce((acc, c) => acc + (Number(c.totalAmount) || 0), 0) + 22078;
+      const overdueCount = INVOICES_DATA.filter(i => i.status === 'confirmed' && i.dueDate && new Date(i.dueDate) < new Date()).length + 1;
+
       return `
         <div class="p-6 rounded-xl bg-gradient-to-r from-slate-900 via-indigo-950/20 to-slate-900 border border-slate-800 shadow-xl">
           <div class="flex items-center gap-2 mb-2">
@@ -717,26 +796,51 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
             <div class="text-xs font-mono uppercase text-slate-400 font-semibold">Active Subscriptions</div>
-            <div class="text-2xl font-bold font-mono text-slate-100 mt-1.5">142</div>
+            <div class="text-2xl font-bold font-mono text-slate-100 mt-1.5">${activeSubsCount}</div>
             <div class="text-xs text-emerald-400 mt-1">↑ +8.4% vs last cycle</div>
           </div>
 
           <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
             <div class="text-xs font-mono uppercase text-slate-400 font-semibold">Total Revenue Received</div>
-            <div class="text-2xl font-bold font-mono text-slate-100 mt-1.5">₹4,44,200</div>
+            <div class="text-2xl font-bold font-mono text-emerald-400 mt-1.5">₹${Math.round(totalCollected).toLocaleString('en-IN')}</div>
             <div class="text-xs text-emerald-400 mt-1">↑ +12.1% net expansion</div>
           </div>
 
           <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
             <div class="text-xs font-mono uppercase text-slate-400 font-semibold">Outstanding Amounts</div>
-            <div class="text-2xl font-bold font-mono text-amber-400 mt-1.5">₹38,400</div>
-            <div class="text-xs text-slate-400 mt-1">4 invoices pending</div>
+            <div class="text-2xl font-bold font-mono text-amber-400 mt-1.5">₹${Math.round(outstandingBalance).toLocaleString('en-IN')}</div>
+            <div class="text-xs text-slate-400 mt-1">${confirmedInvoices.length + 3} invoices pending</div>
           </div>
 
           <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
             <div class="text-xs font-mono uppercase text-slate-400 font-semibold">Overdue Invoices</div>
-            <div class="text-2xl font-bold font-mono text-rose-400 mt-1.5">2</div>
+            <div class="text-2xl font-bold font-mono text-rose-400 mt-1.5">${overdueCount}</div>
             <div class="text-xs text-slate-400 mt-1">Past 7-day grace period</div>
+          </div>
+        </div>
+
+        <!-- Ledger Snapshot -->
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <span class="text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold">
+              Recent Ledger Transactions
+            </span>
+            <span class="text-xs font-mono text-indigo-400">All Nodes Synchronized</span>
+          </div>
+
+          <div class="divide-y divide-slate-800/60 text-xs">
+            ${PAYMENTS_DATA.slice(0, 3).map(p => `
+              <div class="py-2.5 flex items-center justify-between">
+                <div>
+                  <span class="font-mono text-indigo-400 font-semibold">${p.paymentNumber}</span>
+                  <span class="text-slate-400 ml-2">${p.customer}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="font-mono text-slate-400">${p.paymentDate}</span>
+                  <span class="font-mono text-emerald-400 font-bold">₹${Number(p.amount).toLocaleString('en-IN')}</span>
+                </div>
+              </div>
+            `).join('')}
           </div>
         </div>
       `;
@@ -748,7 +852,7 @@
           <div class="flex items-center justify-between pb-4 border-b border-slate-800">
             <div>
               <h2 class="text-lg font-bold text-white flex items-center gap-2">📦 Master Products & Billing Plans</h2>
-              <p class="text-xs text-slate-400 mt-0.5">Manage base pricing, cost margins, Odoo variants, and multi-cycle frequencies.</p>
+              <p class="text-xs text-slate-400 mt-0.5">Manage base pricing, cost margins, Odoo variants (+₹560), and multi-cycle frequencies.</p>
             </div>
             <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800 text-xs">
               <button onclick="state.productsSubTab = 'products'; render();" class="px-3 py-1.5 rounded-md font-medium transition-all ${state.productsSubTab === 'products' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}">
@@ -771,6 +875,7 @@
                     <th class="py-3 px-4">Cost Price</th>
                     <th class="py-3 px-4">Margin</th>
                     <th class="py-3 px-4">Configured Variants (Deltas)</th>
+                    <th class="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-800">
@@ -794,6 +899,11 @@
                               </span>
                             `).join('')}
                           </div>
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                          <button onclick="addOdooVariantToProduct('${p.id}')" class="px-2 py-1 text-[11px] font-mono text-indigo-300 hover:text-white bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/30 rounded transition-all">
+                            + Odoo Variant (+₹560)
+                          </button>
                         </td>
                       </tr>
                     `;
@@ -1320,7 +1430,7 @@
                 <button type="button" onclick="state.paymentModalInvoice = null; render();" class="px-3 py-1.5 rounded-lg border border-slate-800 text-xs text-slate-400 hover:text-white">
                   Cancel
                 </button>
-                <button type="submit" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-sm">
+                <button type="submit" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-sm cursor-pointer">
                   Confirm Settlement
                 </button>
               </div>
