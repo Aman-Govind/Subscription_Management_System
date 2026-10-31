@@ -45,6 +45,11 @@ htmlcov/
 .env.*
 !.env.example
 
+# Local secrets and private keys (never commit credentials or key material)
+secrets/
+*.key
+*.pem
+
 # Python virtual environments
 **/venv/
 **/.venv/
