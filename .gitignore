@@ -31,3 +31,20 @@ frontend/pnpm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+# Python cache and compiled files
+**/__pycache__/
+*.py[cod]
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+**/venv/
+**/.venv/
