@@ -257,7 +257,7 @@ def require_role(*allowed_roles: str) -> Callable[[Any], Any]:
 
     def role_checker(current_user: Any = Depends(get_current_user)) -> Any:
         user_role = str(getattr(current_user, "role", "")).strip().lower()
-        if user_role not in normalized_allowed and "admin" not in user_role:
+        if user_role not in normalized_allowed and user_role != "admin":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Operation not permitted. Required role: {', '.join(allowed_roles)}",

@@ -88,6 +88,64 @@ def create_tax(
     return TaxResponse.model_validate(new_tax)
 
 
+# ── Tax Calculation (must be declared BEFORE /{tax_id} wildcard) ─────────────
+
+@router.post(
+    "/calculate",
+    response_model=TaxCalculationResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Calculate tax amount",
+    description="Utility endpoint to calculate the exact tax amount for a given base amount and tax rule.",
+)
+def calculate_tax(
+    calc_in: TaxCalculationRequest,
+    db: Session = Depends(get_db),
+) -> TaxCalculationResponse:
+    """Calculate tax for invoices, order lines, or subscription quotes."""
+    tax = db.query(Tax).filter(Tax.id == calc_in.tax_id).first()
+    if not tax:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tax configuration with ID {calc_in.tax_id} not found.",
+        )
+
+    amount = calc_in.amount
+    rate = Decimal(str(tax.rate))
+
+    if tax.tax_type == "percentage":
+        if tax.is_inclusive:
+            # Inclusive: total is the given amount, tax is extracted
+            # total = amount; base = amount / (1 + rate/100)
+            divisor = Decimal("1") + (rate / Decimal("100"))
+            base_amount = _round_curr(amount / divisor)
+            tax_amount = amount - base_amount
+            total_amount = amount
+        else:
+            # Exclusive: tax is added on top of base amount
+            base_amount = amount
+            tax_amount = _round_curr(base_amount * (rate / Decimal("100")))
+            total_amount = base_amount + tax_amount
+    else:  # fixed
+        if tax.is_inclusive:
+            tax_amount = min(rate, amount)
+            base_amount = amount - tax_amount
+            total_amount = amount
+        else:
+            base_amount = amount
+            tax_amount = rate
+            total_amount = base_amount + tax_amount
+
+    return TaxCalculationResponse(
+        base_amount=base_amount,
+        tax_id=tax.id,
+        tax_name=tax.name,
+        tax_rate=rate,
+        tax_amount=tax_amount,
+        total_amount=total_amount,
+        is_inclusive=tax.is_inclusive,
+    )
+
+
 @router.get(
     "/{tax_id}",
     response_model=TaxResponse,
@@ -170,59 +228,4 @@ def delete_tax(
     db.commit()
     return {"message": "Tax configuration deleted successfully", "id": tax_id}
 
-
-@router.post(
-    "/calculate",
-    response_model=TaxCalculationResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Calculate tax amount",
-    description="Utility endpoint to calculate the exact tax amount for a given base amount and tax rule.",
-)
-def calculate_tax(
-    calc_in: TaxCalculationRequest,
-    db: Session = Depends(get_db),
-) -> TaxCalculationResponse:
-    """Calculate tax for invoices, order lines, or subscription quotes."""
-    tax = db.query(Tax).filter(Tax.id == calc_in.tax_id).first()
-    if not tax:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tax configuration with ID {calc_in.tax_id} not found.",
-        )
-
-    amount = calc_in.amount
-    rate = Decimal(str(tax.rate))
-
-    if tax.tax_type == "percentage":
-        if tax.is_inclusive:
-            # Inclusive: total is the given amount, tax is extracted
-            # total = amount; base = amount / (1 + rate/100)
-            divisor = Decimal("1") + (rate / Decimal("100"))
-            base_amount = _round_curr(amount / divisor)
-            tax_amount = amount - base_amount
-            total_amount = amount
-        else:
-            # Exclusive: tax is added on top of base amount
-            base_amount = amount
-            tax_amount = _round_curr(base_amount * (rate / Decimal("100")))
-            total_amount = base_amount + tax_amount
-    else:  # fixed
-        if tax.is_inclusive:
-            tax_amount = min(rate, amount)
-            base_amount = amount - tax_amount
-            total_amount = amount
-        else:
-            base_amount = amount
-            tax_amount = rate
-            total_amount = base_amount + tax_amount
-
-    return TaxCalculationResponse(
-        base_amount=base_amount,
-        tax_id=tax.id,
-        tax_name=tax.name,
-        tax_rate=rate,
-        tax_amount=tax_amount,
-        total_amount=total_amount,
-        is_inclusive=tax.is_inclusive,
-    )
 
