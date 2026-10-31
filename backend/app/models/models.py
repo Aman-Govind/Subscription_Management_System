@@ -45,6 +45,8 @@ class SubscriptionStatus(str, PyEnum):
     QUOTATION = "quotation"
     CONFIRMED = "confirmed"
     ACTIVE = "active"
+    CANCELLED = "cancelled"
+    EXPIRED = "expired"
     CLOSED = "closed"
 
 
@@ -271,6 +273,8 @@ class Subscription(Base):
         index=True,
     )
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    next_billing_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     expiry_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     payment_terms: Mapped[str | None] = mapped_column(String(255), nullable=True)
 

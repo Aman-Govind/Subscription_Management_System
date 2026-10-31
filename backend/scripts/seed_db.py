@@ -5,6 +5,8 @@ Run from the backend directory:
 
 Use --reset only for local development data. It deletes all rows in the
 implemented application tables before recreating the demo dataset.
+
+All seeded users use the demo password: Hackathon2026!
 """
 
 from __future__ import annotations
@@ -22,6 +24,7 @@ if str(BACKEND_DIR) not in sys.path:
 
 from sqlalchemy import delete, select
 
+from app.core.security import hash_password
 from app.database import SessionLocal
 from app.models import (
     BillingCycle,
@@ -41,7 +44,7 @@ from app.models import (
     UserRole,
 )
 
-DUMMY_PASSWORD_HASH = "hashed_password_123"
+DEMO_PASSWORD = "Hackathon2026!"
 
 
 def clear_seedable_data(session) -> None:
@@ -79,22 +82,22 @@ def seed_database(reset: bool = False) -> None:
 
             admin = User(
                 email="admin@brightloop.test",
-                password_hash=DUMMY_PASSWORD_HASH,
+                password_hash=hash_password(DEMO_PASSWORD),
                 role=UserRole.ADMIN,
             )
             staff = User(
                 email="staff@brightloop.test",
-                password_hash=DUMMY_PASSWORD_HASH,
+                password_hash=hash_password(DEMO_PASSWORD),
                 role=UserRole.STAFF,
             )
             customer_one = User(
                 email="customer.one@brightloop.test",
-                password_hash=DUMMY_PASSWORD_HASH,
+                password_hash=hash_password(DEMO_PASSWORD),
                 role=UserRole.CUSTOMER,
             )
             customer_two = User(
                 email="customer.two@brightloop.test",
-                password_hash=DUMMY_PASSWORD_HASH,
+                password_hash=hash_password(DEMO_PASSWORD),
                 role=UserRole.CUSTOMER,
             )
             session.add_all([admin, staff, customer_one, customer_two])
