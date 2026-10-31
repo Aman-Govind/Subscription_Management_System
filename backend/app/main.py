@@ -4,15 +4,23 @@ FastAPI application entry point for the Subscription Management System.
 Run with:
     uvicorn app.main:app --reload
 
-The app is intentionally kept free of database connections in Stage 1.
-Database integration will be added in Stage 5 once Member 1 delivers the models.
+Provides endpoints for:
+- Health checks (/api/health)
+- Authentication & RBAC (/api/auth)
+- Products & Variants CRUD (/api/products)
+- Subscription Plans CRUD (/api/plans)
+- Tax Configurations & Calculations (/api/taxes)
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.core.config import settings
+from app.api.auth import router as auth_router
 from app.api.health import router as health_router
+from app.api.plans import router as plans_router
+from app.api.products import router as products_router
+from app.api.taxes import router as taxes_router
+from app.core.config import settings
 
 # ── Create the FastAPI application ───────────────────────────────────────────
 app = FastAPI(
@@ -40,16 +48,25 @@ app.add_middleware(
 )
 
 # ── Register Routers ──────────────────────────────────────────────────────────
-# Each router is a separate file under app/api/.
-# New routers (subscriptions, invoices, etc.) will be added here in later stages.
+# Routers organized under app/api/ with clean dependency injection.
 app.include_router(health_router)
+app.include_router(auth_router)
+app.include_router(products_router)
+app.include_router(plans_router)
+app.include_router(taxes_router)
 
-# ── Root redirect (optional convenience) ─────────────────────────────────────
+
+# ── Root redirect / information ──────────────────────────────────────────────
 @app.get("/", include_in_schema=False)
 def root():
     """Redirect hint for anyone who hits the bare root URL."""
     return {
-        "message": "Welcome to the Subscription Management API",
+        "message": f"Welcome to the {settings.APP_NAME}",
         "docs": "/docs",
+        "redoc": "/redoc",
         "health": "/api/health",
+        "auth": "/api/auth",
+        "products": "/api/products",
+        "plans": "/api/plans",
+        "taxes": "/api/taxes",
     }
